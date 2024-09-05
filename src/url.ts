@@ -1,3 +1,4 @@
+
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 
@@ -45,5 +46,3 @@ export function test_API(){
     }
     getPullRequestCount();
 }
-
-
