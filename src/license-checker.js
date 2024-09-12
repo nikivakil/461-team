@@ -1,60 +1,67 @@
-// Import the built-in 'fs' (File System) module in Node.js
 const fs = require('fs');
+const path = require('path');
 
-// Define the file path of the LICENSE file to read
-const filePath = './LICENSE.txt';  // Path to the file
+// list of licenses that are considered LGPLv2.1-compatible
+const lgplCompatibleLicenses = [
+    'MIT', 'BSD', 'Apache', 'LGPL', 'ISC'
+];
 
-// First, read the content of the LICENSE file asynchronously
-fs.readFile(filePath, 'utf8', (err, data) => {
-    // If an error occurs during the file reading process, log the error
-    if (err) {
-        console.error('Error reading file:', err);
-    } else {
-        // If successful, print the file content to the console
-        //console.log(data);
+// function to read the license from the README file
+function getLicenseFromReadme(readmeContent) {
+    // regex to find "License" section in the README
+    const licenseRegex = /##?\s*License([\s\S]*?)(##|$)/i;
+    const match = readmeContent.match(licenseRegex); // check if a "License" section exists
+    return match ? match[1].trim() : null; // return the "License section if it is found"
+}
+
+// function to read the LICENSE file
+function getLicenseFromLicenseFile(licenseFilePath) {
+    if (fs.existsSync(licenseFilePath)) { // check if "License" file exists
+        return fs.readFileSync(licenseFilePath, 'utf-8').trim(); // return the content of the file
     }
-});
+    return null; // return NULL if no license is found
+}
 
-// Create a regular expression to find the license version (e.g., "GNU Lesser General Public License, version 2.1")
-const licenseRegex = /GNU Lesser General Public License, version\s+(\d\.\d)/i;
+// function to check if the license is compatible with LGPLv2.1
+function isLicenseCompatible(licenseText) {
+    if (!licenseText) return false;
+    return lgplCompatibleLicenses.some(license => licenseText.includes(license)); // check if any compatible licenses are mentioned in the file
+}
 
-// Read the LICENSE file again and try to match the license version using the regex
-fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-        // Log any error if the file can't be read
-        console.error('Error reading file:', err);
-    } else {
-        // Match the license text to extract the version (if it exists)
-        const match = data.match(licenseRegex);
-        if (match) {
-            // If a match is found, log the version number to the console
-            console.log('License version found:', match[1]);
-        } else {
-            // If no match is found, log that no valid license was found
-            console.log('No valid license found.');
-        }
+// main function to check licenses in a project directory
+function checkProjectLicenses(projectDir) {
+    const readmePath = path.join(projectDir, 'README.md'); // define path to the README file
+    const licensePath = fs.readdirSync(projectDir).find(file => file.startsWith('LICENSE')); // define a path to the "License" file
+
+    let licenseText = null;
+
+    // if a README file exists, extract license info from it
+    if (fs.existsSync(readmePath)) {
+        const readmeContent = fs.readFileSync(readmePath, 'utf-8');
+        licenseText = getLicenseFromReadme(readmeContent);
     }
-});
 
-// Define a function to check if the license is LGPL version 2.1
-const checkLGPLv2_1 = (licenseText) => {
-    // Create a regular expression specifically for LGPLv2.1
-    const lgplRegex = /GNU Lesser General Public License, version 2\.1/i;
-    // Return true if the license text matches LGPLv2.1, otherwise false
-    return lgplRegex.test(licenseText);
-};
-
-// Read the LICENSE file once again and check if it is LGPLv2.1 compatible
-fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-        // Log any error that occurs during reading the file
-        console.error('Error reading file:', err);
-    } else {
-        // Use the checkLGPLv2_1 function to verify if the license is compatible with LGPLv2.1
-        if (checkLGPLv2_1(data)) {
-            console.log('This file is LGPLv2.1 compatible.');
-        } else {
-            console.log('This file is not LGPLv2.1 compatible.');
-        }
+    // if license not found in README, check the separate license file
+    if (!licenseText && licensePath) {
+        licenseText = getLicenseFromLicenseFile(path.join(projectDir, licensePath));
     }
-});
+
+    // if no license text is found, return error
+    if (!licenseText) {
+        console.log('No license information found in this project.');
+        return false;
+    }
+
+    // check if license text is compatible and return a message
+    if (isLicenseCompatible(licenseText)) {
+        console.log('The license is compatible with LGPLv2.1.');
+        return true;
+    } else {
+        console.log('The license is NOT compatible with LGPLv2.1.');
+        return false;
+    }
+}
+
+// example usage: check licenses in a given project directory
+const projectDir = './'; // assumes it is in the same directory as this file
+checkProjectLicenses(projectDir);
