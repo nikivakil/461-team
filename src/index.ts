@@ -68,7 +68,7 @@ async function getReadmeContent(owner: string, repo: string): Promise<string> {
 }
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
-  const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  const match = url.match(/github.com\/([^/]+)\/([^/]+)/); // Unescaped forward slashes
   return match ? { owner: match[1], repo: match[2] } : null;
 }
 
