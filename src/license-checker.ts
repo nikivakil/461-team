@@ -1,13 +1,13 @@
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 // list of licenses that are considered LGPLv2.1-compatible
-const lgplCompatibleLicenses: string[] = [
+export const lgplCompatibleLicenses: string[] = [
     'MIT', 'BSD', 'Apache', 'LGPL', 'ISC'
 ];
 
 // function to read the license from the README file
-function getLicenseFromReadme(readmeContent: string): string | null {
+export function getLicenseFromReadme(readmeContent: string): string | null {
     // regex to find "License" section in the README
     const licenseRegex = /##?\s*License([\s\S]*?)(##|$)/i;
     const match = readmeContent.match(licenseRegex); // check if a "License" section exists
@@ -15,7 +15,7 @@ function getLicenseFromReadme(readmeContent: string): string | null {
 }
 
 // function to read the LICENSE file
-function getLicenseFromLicenseFile(licenseFilePath: string): string | null {
+export function getLicenseFromLicenseFile(licenseFilePath: string): string | null {
     if (fs.existsSync(licenseFilePath)) { // check if "License" file exists
         return fs.readFileSync(licenseFilePath, 'utf-8').trim(); // return the content of the file
     }
@@ -23,15 +23,20 @@ function getLicenseFromLicenseFile(licenseFilePath: string): string | null {
 }
 
 // function to check if the license is compatible with LGPLv2.1
-function isLicenseCompatible(licenseText: string | null): boolean {
+export function isLicenseCompatible(licenseText: string | null): boolean {
     if (!licenseText) return false;
     return lgplCompatibleLicenses.some(license => licenseText.includes(license)); // check if any compatible licenses are mentioned in the file
 }
 
+/*
+
 // main function to check licenses in a project directory
-function checkProjectLicenses(projectDir: string): boolean {
+export function checkProjectLicenses(projectDir: string): boolean {
     const readmePath = path.join(projectDir, 'README.md'); // define path to the README file
-    const licensePath = fs.readdirSync(projectDir).find(file => file.startsWith('LICENSE')); // define a path to the "License" file
+    const licenseFiles = fs.readdirSync(projectDir);
+    const licensePath = licenseFiles.find((file: string) => file.startsWith('LICENSE'));
+
+    console.log('Files in directory:', licenseFiles); // Check what is returned
 
     let licenseText = null;
 
@@ -62,6 +67,9 @@ function checkProjectLicenses(projectDir: string): boolean {
     }
 }
 
+
 // example usage: check licenses in a given project directory
 const projectDir = './'; // assumes it is in the same directory as this file
 checkProjectLicenses(projectDir);
+
+*/

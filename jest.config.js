@@ -7,4 +7,5 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': 'ts-jest',  // Transform TypeScript files using ts-jest
   },
+  verbose: true,  // Print individual test results with the test suite hierarchy
 };

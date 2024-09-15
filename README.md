@@ -8,4 +8,5 @@ Niki Vakil
 
 Shaan Chanchani
 
-
+## License
+MIT
