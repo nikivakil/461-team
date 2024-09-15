@@ -1,7 +1,7 @@
 
 
 import fs from 'fs';
-import { getLicenseFromLicenseFile, getLicenseFromReadme } from '../license-checker';
+import { getLicenseFromLicenseFile, getLicenseFromReadme } from '../metrics/license-checker';
 import path from 'path';
 //import { getLicenseFromReadme, getLicenseFromLicenseFile, isLicenseCompatible, checkProjectLicenses } from '../license-checker';
 
