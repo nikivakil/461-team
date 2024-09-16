@@ -1,21 +1,7 @@
 import { Command } from 'commander';
 import fs from 'fs';
 import path from 'path';
-import * as dotenv from 'dotenv';
-import axios from 'axios';
-
-dotenv.config();
-
-const program = new Command();
-
-interface RepoContent {
-  name: string;
-  url: string;
-}
-
-interface ReadmeContent {
-  content: string;
-}
+import { getReadmeContent, parseGitHubUrl, classifyURL, UrlType, extractNpmPackageName, getNpmPackageGitHubUrl } from './url';
 
 interface MetricsResult {
   URL: string;
@@ -33,65 +19,56 @@ interface MetricsResult {
   License_Latency: number;
 }
 
-function getToken(): string {
-  const githubToken = process.env.GITHUB_TOKEN;
-  if (!githubToken) {
-    console.error('GITHUB_TOKEN is not set in .env file');
-  }
-  return githubToken as string;
-}
-
-async function getReadmeContent(owner: string, repo: string): Promise<string> {
-  const token = getToken();
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
-
-  const headers = {
-    'Authorization': `token ${token}`,
-    'Accept': 'application/vnd.github.v3+json'
-  };
-
-  try {
-    const response = await axios.get<RepoContent[]>(apiUrl, { headers });
-    const readmeFile = response.data.find(file => file.name.toLowerCase().startsWith('readme'));
-    if (!readmeFile) {
-      throw new Error('README file not found');
-    }
-
-    const readmeResponse = await axios.get<ReadmeContent>(readmeFile.url, { headers });
-    return Buffer.from(readmeResponse.data.content, 'base64').toString('utf-8');
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(`API request failed: ${error.response?.status} ${error.response?.statusText}`);
-    }
-    throw error;
-  }
-}
-
-function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
-  const match = url.match(/github.com\/([^/]+)\/([^/]+)/); // Unescaped forward slashes
-  return match ? { owner: match[1], repo: match[2] } : null;
-}
-
 async function processUrl(url: string): Promise<MetricsResult> {
-  const repoInfo = parseGitHubUrl(url);
+  const urlType = classifyURL(url);
   let readmeContent = '';
+  let githubUrl = '';
 
+  switch (urlType) {
+    case UrlType.GitHub:
+      githubUrl = url;
+      break;
+    case UrlType.NPM:
+      const packageName = extractNpmPackageName(url);
+      if (packageName) {
+        const extractedGithubUrl = await getNpmPackageGitHubUrl(packageName);
+        if (extractedGithubUrl) {
+          githubUrl = extractedGithubUrl;
+          console.log(`NPM package ${url} converted to GitHub URL: ${githubUrl}`);
+        } else {
+          console.error(`Unable to extract GitHub URL for NPM package: ${url}`);
+          return createEmptyMetricsResult(url);
+        }
+      } else {
+        console.error(`Invalid NPM package URL: ${url}`);
+        return createEmptyMetricsResult(url);
+      }
+      break;
+    case UrlType.Other:
+      console.error(`Unsupported URL type: ${url}`);
+      return createEmptyMetricsResult(url);
+  }
+
+  const repoInfo = parseGitHubUrl(githubUrl);
   if (repoInfo) {
     try {
       readmeContent = await getReadmeContent(repoInfo.owner, repoInfo.repo);
-      console.log(`README content retrieved for ${url}`);
-      console.log('README Content:');
-      console.log('-------------------');
-      console.log(readmeContent);
-      console.log('-------------------');
+      console.log(`README content retrieved for ${githubUrl}`);
+      // console.log('README Content:');
+      // console.log('-------------------');
+      // console.log(readmeContent);
+      // console.log('-------------------');
     } catch (error) {
-      console.error(`Error retrieving README for ${url}:`, error);
+      console.error(`Error retrieving README for ${githubUrl}:`, error);
     }
   } else {
-    console.error(`Invalid GitHub URL: ${url}`);
+    console.error(`Invalid GitHub URL: ${githubUrl}`);
   }
 
+  return createEmptyMetricsResult(url);
+}
 
+function createEmptyMetricsResult(url: string): MetricsResult {
   return {
     URL: url,
     NetScore: 0,
@@ -108,6 +85,9 @@ async function processUrl(url: string): Promise<MetricsResult> {
     License_Latency: 0
   };
 }
+
+
+const program = new Command();
 
 program
   .version('1.0.0')
