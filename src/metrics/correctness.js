@@ -36,6 +36,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.analyzeRepo = analyzeRepo;
+exports.get_responsiveness_metric = get_responsiveness_metric;
 var axios_1 = require("axios");
 var url_1 = require("../url"); // Assuming getToken is imported from url.ts
 /**
@@ -186,12 +188,56 @@ function analyzeRepo(owner, repo) {
         });
     });
 }
+/**
+ * Extracts owner and repo from a GitHub repository URL.
+ * @param url - The GitHub repository URL.
+ * @returns An object with owner and repo.
+ */
+function parseRepoUrl(url) {
+    var match = url.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)$/);
+    if (!match)
+        throw new Error('Invalid GitHub URL');
+    return { owner: match[1], repo: match[2] };
+}
+/**
+ * Gets the responsiveness metric for a GitHub repository.
+ * @param repoUrl - The URL of the GitHub repository.
+ * @returns A score between 0 and 1 representing responsiveness.
+ */
+function get_responsiveness_metric(repoUrl) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _a, owner, repo, _b, issues, pullRequests, issueAnalysis, prAnalysis, avgTimeToClose, maxTimeToClose, score, error_4;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    _c.trys.push([0, 2, , 3]);
+                    _a = parseRepoUrl(repoUrl), owner = _a.owner, repo = _a.repo;
+                    return [4 /*yield*/, Promise.all([
+                            getIssues(owner, repo),
+                            getPullRequests(owner, repo)
+                        ])];
+                case 1:
+                    _b = _c.sent(), issues = _b[0], pullRequests = _b[1];
+                    issueAnalysis = analyzeIssues(issues);
+                    prAnalysis = analyzePullRequests(pullRequests);
+                    avgTimeToClose = (issueAnalysis.avgTimeToClose + prAnalysis.avgTimeToClose) / 2;
+                    maxTimeToClose = 100;
+                    score = Math.max(0, 1 - avgTimeToClose / maxTimeToClose);
+                    return [2 /*return*/, score];
+                case 2:
+                    error_4 = _c.sent();
+                    console.error('Error calculating responsiveness metric:', error_4);
+                    throw error_4;
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
 // Usage example
-var OWNER = 'nikivakil';
-var REPO = '461-team';
-analyzeRepo(OWNER, REPO)
-    .then(function (result) {
-    console.log('Analysis Result:', result);
+var REPO_URL = 'https://github.com/nikivakil/461-team';
+get_responsiveness_metric(REPO_URL)
+    .then(function (score) {
+    console.log('Responsiveness Score:', score);
 })
     .catch(function (error) {
     console.error('Error:', error.message);

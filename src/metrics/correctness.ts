@@ -128,14 +128,53 @@ export async function analyzeRepo(owner: string, repo: string) { // fetches issu
         throw error;
     }
 }
+/**
+ * Extracts owner and repo from a GitHub repository URL.
+ * @param url - The GitHub repository URL.
+ * @returns An object with owner and repo.
+ */
+function parseRepoUrl(url: string): { owner: string, repo: string } {
+    const match = url.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)$/);
+    if (!match) throw new Error('Invalid GitHub URL');
+    return { owner: match[1], repo: match[2] };
+}
+
+/**
+ * Gets the responsiveness metric for a GitHub repository.
+ * @param repoUrl - The URL of the GitHub repository.
+ * @returns A score between 0 and 1 representing responsiveness.
+ */
+export async function get_responsiveness_metric(repoUrl: string): Promise<number> {
+    try {
+        const { owner, repo } = parseRepoUrl(repoUrl);
+
+        // Fetch and analyze issues and pull requests
+        const [issues, pullRequests] = await Promise.all([
+            getIssues(owner, repo),
+            getPullRequests(owner, repo)
+        ]);
+
+        const issueAnalysis = analyzeIssues(issues);
+        const prAnalysis = analyzePullRequests(pullRequests);
+
+        // Compute responsiveness score based on metrics
+        const avgTimeToClose = (issueAnalysis.avgTimeToClose + prAnalysis.avgTimeToClose) / 2;
+        const maxTimeToClose = 100; // Define a reasonable max time (in hours) for normalization
+        const score = Math.max(0, 1 - avgTimeToClose / maxTimeToClose);
+
+        return score;
+    } catch (error) {
+        console.error('Error calculating responsiveness metric:', error);
+        throw error;
+    }
+}
 
 // Usage example
-const OWNER = 'nikivakil';
-const REPO = '461-team';
+const REPO_URL = 'https://github.com/nikivakil/461-team';
 
-analyzeRepo(OWNER, REPO)
-    .then(result => {
-        console.log('Analysis Result:', result);
+get_responsiveness_metric(REPO_URL)
+    .then(score => {
+        console.log('Responsiveness Score:', score);
     })
     .catch(error => {
         console.error('Error:', error.message);
