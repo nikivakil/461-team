@@ -17,7 +17,7 @@ interface ReadmeContent {
  * 
  * @returns {string} - The GitHub token.
  */
-function getToken(): string {
+export function getToken(): string {
     const githubToken = process.env.GITHUB_TOKEN;
     if(!githubToken){
         console.error('GITHUB_TOKEN is not set in .env file');
