@@ -1,73 +1,142 @@
 import axios from 'axios';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
+import { getToken } from '../url'; // Assuming getToken is imported from url.ts
 
 /**
- * Returns the GitHub token from the .env file.
- * 
- * @returns {string} - The GitHub token.
+ * Fetches the issues for a GitHub repository.
+ * @param owner - The repository owner.
+ * @param repo - The repository name.
+ * @returns The list of issues.
  */
-function getToken(): string {
-  const githubToken = process.env.GITHUB_TOKEN;
-  if (!githubToken) {
-    throw new Error('GITHUB_TOKEN is not set in .env file');
-  }
-  return githubToken;
+async function getIssues(owner: string, repo: string) { // fetches all issues (open, closed, etc)
+    const token = getToken(); // requires token for authorization
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=all`;
+
+    try {
+        const response = await axios.get(apiUrl, {
+            headers: {
+                Authorization: `token ${token}`
+            }
+        });
+        return response.data; // returns list of issues
+    } catch (error) {
+        console.error('Error fetching issues:', error);
+        throw error; // or returns error
+    }
 }
 
 /**
- * Fetches open issues and pull requests from a GitHub repository.
- * 
- * @param {string} owner - The owner of the repository.
- * @param {string} repo - The name of the repository.
- * @returns {Promise<any[]>} - A promise that resolves to an array of issues/PRs.
- * @throws {Error} - Throws an error if the API request fails.
+ * Analyzes issues by counting open and closed ones.
+ * @param issues - The list of issues.
+ * @returns An object with analysis results.
  */
-async function fetchIssuesAndPRs(owner: string, repo: string): Promise<any[]> {
-  const token = getToken();
-  const headers = {
-    'Authorization': `token ${token}`,
-    'Accept': 'application/vnd.github.v3+json'
-  };
+function analyzeIssues(issues: any[]) { // analyzes list of issues
+    const openIssues = issues.filter(issue => issue.state === 'open'); // counts open issues
+    const closedIssues = issues.filter(issue => issue.state === 'closed'); // counts closed issues
+    
+    // Time to close (for closed issues)
+    const closeTimes = closedIssues.map(issue => {
+        const createdAt = new Date(issue.created_at).getTime();
+        const closedAt = new Date(issue.closed_at).getTime();
+        return (closedAt - createdAt) / (1000 * 60 * 60); // time in hours
+    });
+    const avgTimeToClose = closeTimes.length > 0 ? 
+        (closeTimes.reduce((a, b) => a + b, 0) / closeTimes.length) : 0;
 
-  try {
-    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues`, { headers });
-    return response.data;
-  } catch (error) {
-    throw new Error(`Error fetching issues: ${error.message}`);
-  }
+    return {
+        totalIssues: issues.length,
+        openIssues: openIssues.length,
+        closedIssues: closedIssues.length,
+        avgTimeToClose
+    };
+}
+
+
+/**
+ * Fetches the pull requests for a GitHub repository.
+ * @param owner - The repository owner.
+ * @param repo - The repository name.
+ * @returns The list of pull requests.
+ */
+async function getPullRequests(owner: string, repo: string) { // gets all pull requests 
+    const token = getToken(); // requires token for authorization
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls?state=all`;
+
+    try {
+        const response = await axios.get(apiUrl, {
+            headers: {
+                Authorization: `token ${token}`
+            }
+        });
+        return response.data; // returns list of pull requests
+    } catch (error) {
+        console.error('Error fetching pull requests:', error);
+        throw error; // or returns error
+    }
 }
 
 /**
- * Analyzes correctness by checking the number of bug-related issues.
- * 
- * @param {any[]} issues - The array of issues/PRs.
- * @returns {number} - The correctness score (0.0 to 1.0).
+ * Analyzes pull requests by counting open, closed, and merged ones.
+ * @param pullRequests - The list of pull requests.
+ * @returns An object with analysis results.
  */
-function analyzeCorrectness(issues: any[]): number {
-  const bugLabels = ['bug', 'error', 'failure'];
-  const bugIssues = issues.filter(issue => issue.labels.some((label: any) => bugLabels.includes(label.name)));
-  const totalIssues = issues.length;
-  
-  const bugRatio = totalIssues > 0 ? bugIssues.length / totalIssues : 0;
-  const correctnessScore = bugRatio > 0.3 ? 0.5 : 1.0; // Adjust score based on bug ratio
+function analyzePullRequests(pullRequests: any[]) { // analyzes pull requests
+    const openPRs = pullRequests.filter(pr => pr.state === 'open'); // counts open pull requests
+    const closedPRs = pullRequests.filter(pr => pr.state === 'closed'); // counts closed pull requests
+    
+    // Time to close (for closed PRs)
+    const closeTimes = closedPRs.map(pr => {
+        const createdAt = new Date(pr.created_at).getTime();
+        const closedAt = new Date(pr.closed_at).getTime();
+        return (closedAt - createdAt) / (1000 * 60 * 60); // time in hours
+    });
+    const avgTimeToClose = closeTimes.length > 0 ? 
+        (closeTimes.reduce((a, b) => a + b, 0) / closeTimes.length) : 0;
 
-  return correctnessScore;
+    return {
+        totalPRs: pullRequests.length,
+        openPRs: openPRs.length,
+        closedPRs: closedPRs.length,
+        avgTimeToClose
+    };
 }
+
 
 /**
- * Evaluates the correctness score of a repository.
- * 
- * @param {string} owner - The owner of the repository.
- * @param {string} repo - The name of the repository.
- * @returns {Promise<{ correctness: number; latency: number }>} - The correctness score and API latency.
+ * Analyzes the issues and pull requests of a GitHub repository.
+ * @param owner - The repository owner.
+ * @param repo - The repository name.
+ * @returns A combined analysis of issues and pull requests.
  */
-export async function evaluateCorrectness(owner: string, repo: string): Promise<{ correctness: number; latency: number }> {
-  const startTime = Date.now();
-  const issues = await fetchIssuesAndPRs(owner, repo);
-  const correctness = analyzeCorrectness(issues);
-  const latency = (Date.now() - startTime) / 1000; // Latency in seconds
+export async function analyzeRepo(owner: string, repo: string) { // fetches issues and pull requests
+    try {
+        // Fetch issues and pull requests
+        const [issues, pullRequests] = await Promise.all([
+            getIssues(owner, repo),
+            getPullRequests(owner, repo)
+        ]);
 
-  return { correctness, latency };
+        // Analyze issues and pull requests
+        const issueAnalysis = analyzeIssues(issues);
+        const prAnalysis = analyzePullRequests(pullRequests);
+
+        return {
+            issueAnalysis,
+            prAnalysis
+        };
+    } catch (error) {
+        console.error('Error analyzing repository:', error);
+        throw error;
+    }
 }
+
+// Usage example
+const OWNER = 'nikivakil';
+const REPO = '461-team';
+
+analyzeRepo(OWNER, REPO)
+    .then(result => {
+        console.log('Analysis Result:', result);
+    })
+    .catch(error => {
+        console.error('Error:', error.message);
+    });
