@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import axios from 'axios';
+import * as responsive from './metrics/responsiveness';
 
 dotenv.config();
 
@@ -17,6 +18,9 @@ interface NpmPackageInfo {
             url?: string;
         };
     }
+interface Comment{ // interface for the comment object 
+    created_at: string; // time the comment was created
+}
 
 export enum UrlType {
     GitHub,
@@ -124,13 +128,20 @@ export function extractNpmPackageName(url: string): string | null {
  * @param {string} url - The GitHub URL to parse.
  * @returns {{ owner: string; repo: string } | null} - An object containing owner and repo, or null if invalid.
  */
-export function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
+function parseGitHubUrl(url: string): { owner: string; repo: string }{
     const match = url.match(/github.com\/([^/]+)\/([^/]+)/);
-    return match ? { owner: match[1], repo: match[2] } : null;
+    return match ? { owner: match[1], repo: match[2] } : { owner: '', repo: '' };
   }
 
 
-
+export function get_axios_params(url: string, token: string): {owner: string, repo: string, headers: any}{
+    const {owner, repo} = parseGitHubUrl(url);
+    const headers = {
+        Authorization: `token ${token}`,
+        Accept: 'application/vnd.github.v3+json'
+    };
+    return {owner, repo, headers};
+}
 /**
  * Fetches the content of the README file from a GitHub repository.
  * 
@@ -181,4 +192,71 @@ export function test_getReadmeContent(): void {
     getReadmeContent(OWNER, REPO)
         .then(readmeContent => console.log(readmeContent))
         .catch(error => console.error('Error:', error.message));
+}
+export async function get_avg_ClosureTime(owner: string, repo: string, headers: any){
+    try{
+        const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues?state=closed`, {headers});
+        
+        let totalClosureTime = 0;
+        let totalIssues = 0;
+        for(const issue of response.data){
+            if(issue.state === 'closed'){
+                totalClosureTime += responsive.getTimeDifferenceInHours(issue.created_at, issue.closed_at);
+                totalIssues++;
+            }
+        }
+        if(totalIssues === 0){
+            return 0;
+        }
+        return totalClosureTime / totalIssues;
+    }
+    catch(error){
+        console.error(error);
+    }
+    
+}
+
+export async function getComments(owner: string, repo: string, number: number, headers: any): Promise<Comment[]>{ //function to get the comments on a PR returns a promise of an array of comments
+    try{
+        const response = await axios.get<Comment[]>(`https://api.github.com/repos/${owner}/${repo}/issues/${number}/comments`, {headers});
+        return response.data;
+    }
+    catch(error){
+        console.error(error);
+        return [];
+    }
+}
+export async function get_avg_Responsetime(owner: string, repo: string, headers: any){
+    try{
+        const Pulls = await axios.get(`https://api.github.com/repos/${owner}/${repo}/pulls?state=all`, {headers});
+        let total_Pulls = 0;
+        let total = 0;
+
+        for(const pull of Pulls.data){
+            const PR_number = pull.number;
+            const comments = await getComments(owner, repo, PR_number, headers);
+            if(comments.length == 0){
+                total_Pulls++;
+                continue;
+            }
+            else if(comments.length == 1){
+                total += responsive.getTimeDifferenceInHours(pull.created_at,comments[0].created_at);
+            }
+            else{
+                comments.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); //sort the comments based on the time they were created
+                total += responsive.getTimeDifferenceInHours(pull.created_at,comments[0].created_at); //calculate the time between the first comment and the PR creation
+            }
+            
+            total_Pulls++;
+
+        }
+        if(total_Pulls == 0){
+            return 0;
+        }
+        return total / total_Pulls;
+
+    }
+    catch(error){
+        console.error(error);
+    }
 }
