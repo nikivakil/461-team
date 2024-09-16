@@ -7,7 +7,7 @@ import { getToken } from '../url'; // Assuming getToken is imported from url.ts
  * @param repo - The repository name.
  * @returns The list of issues.
  */
-async function getIssues(owner: string, repo: string) { // fetches all issues (open, closed, etc)
+export async function getIssues(owner: string, repo: string) { // fetches all issues (open, closed, etc)
     const token = getToken(); // requires token for authorization
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=all`;
 
@@ -29,7 +29,7 @@ async function getIssues(owner: string, repo: string) { // fetches all issues (o
  * @param issues - The list of issues.
  * @returns An object with analysis results.
  */
-function analyzeIssues(issues: any[]) { // analyzes list of issues
+export function analyzeIssues(issues: any[]) { // analyzes list of issues
     const openIssues = issues.filter(issue => issue.state === 'open'); // counts open issues
     const closedIssues = issues.filter(issue => issue.state === 'closed'); // counts closed issues
     
@@ -57,7 +57,7 @@ function analyzeIssues(issues: any[]) { // analyzes list of issues
  * @param repo - The repository name.
  * @returns The list of pull requests.
  */
-async function getPullRequests(owner: string, repo: string) { // gets all pull requests 
+export async function getPullRequests(owner: string, repo: string) { // gets all pull requests 
     const token = getToken(); // requires token for authorization
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls?state=all`;
 
@@ -79,7 +79,7 @@ async function getPullRequests(owner: string, repo: string) { // gets all pull r
  * @param pullRequests - The list of pull requests.
  * @returns An object with analysis results.
  */
-function analyzePullRequests(pullRequests: any[]) { // analyzes pull requests
+export function analyzePullRequests(pullRequests: any[]) { // analyzes pull requests
     const openPRs = pullRequests.filter(pr => pr.state === 'open'); // counts open pull requests
     const closedPRs = pullRequests.filter(pr => pr.state === 'closed'); // counts closed pull requests
     

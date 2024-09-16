@@ -1,7 +1,7 @@
 
 
 import fs from 'fs';
-import { getLicenseFromLicenseFile, getLicenseFromReadme } from '../metrics/license-checker';
+import { getLicenseFromLicenseFile, getLicenseFromReadme, isLicenseCompatible } from '../metrics/license-checker';
 import path from 'path';
 //import { getLicenseFromReadme, getLicenseFromLicenseFile, isLicenseCompatible, checkProjectLicenses } from '../license-checker';
 
@@ -44,3 +44,18 @@ describe('getLicenseFromLicenseFile', () => {
         expect(result).toBeNull();
     });
 });
+
+describe('isLicenseCompatible', () => {
+    it('should return true for a compatible license', () => {
+        const licenseText = 'MIT';
+        const result = isLicenseCompatible(licenseText);
+        expect(result).toBe(true);
+    });
+
+    it('should return false for an incompatible license', () => {
+        const licenseText = 'Proprietary';
+        const result = isLicenseCompatible(licenseText);
+        expect(result).toBe(false);
+    });
+});
+
