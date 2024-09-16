@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { evaluateCorrectness } from './metrics/correctness';
 import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
