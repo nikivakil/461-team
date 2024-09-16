@@ -4,13 +4,26 @@ import axios from 'axios';
 dotenv.config();
 
 interface RepoContent {
-  name: string;
-  url: string;
+    name: string;
+    url: string;
+  }
+  
+interface ReadmeContent {
+    content: string;
+    }
+
+interface NpmPackageInfo {
+        repository?: {
+            url?: string;
+        };
+    }
+
+export enum UrlType {
+    GitHub,
+    NPM,
+    Other
 }
 
-interface ReadmeContent {
-  content: string;
-}
 
 /**
  * Returns the GitHub token from the .env file.
@@ -54,6 +67,69 @@ export function test_API(): void {
     }
     getPullRequestCount();
 }
+
+/**
+ * Classifies the given URL as GitHub, NPM, or Other.
+ * 
+ * @param {string} url - The URL to classify.
+ * @returns {UrlType} - The classified URL type.
+ */
+export function classifyURL(url: string): UrlType {
+    if (url.includes('github.com')) {
+      return UrlType.GitHub;
+    } else if (url.includes('npmjs.com') || url.startsWith('npm:')) {
+      return UrlType.NPM;
+    } else {
+      return UrlType.Other;
+    }
+}
+
+/**
+ * Extracts the package name from an NPM URL.
+ * 
+ * @param {string} url - The NPM URL to parse.
+ * @returns {string | null} - The package name or null if invalid.
+ */
+export function extractNpmPackageName(url: string): string | null {
+    const match = url.match(/npmjs\.com\/package\/([^/]+)/);
+    return match ? match[1] : null;
+  }
+
+
+  /**
+   * Fetches the GitHub URL for an NPM package.
+   * 
+   * @param {string} packageName - The name of the NPM package.
+   * @returns {Promise<string | null>} - A promise that resolves to the GitHub URL or null if not found.
+   */
+  export async function getNpmPackageGitHubUrl(packageName: string): Promise<string | null> {
+    try {
+      const response = await axios.get<NpmPackageInfo>(`https://registry.npmjs.org/${packageName}`);
+      const repoUrl = response.data.repository?.url;
+      
+      if (repoUrl) {
+        // Clean up the repository URL if needed
+        return repoUrl.replace(/^git\+/, '').replace(/\.git$/, '');
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error fetching NPM package info for ${packageName}:`, error);
+      return null;
+    }
+  }
+
+/**
+ * Parses a GitHub URL to extract owner and repo information.
+ * 
+ * @param {string} url - The GitHub URL to parse.
+ * @returns {{ owner: string; repo: string } | null} - An object containing owner and repo, or null if invalid.
+ */
+export function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
+    const match = url.match(/github.com\/([^/]+)\/([^/]+)/);
+    return match ? { owner: match[1], repo: match[2] } : null;
+  }
+
+
 
 /**
  * Fetches the content of the README file from a GitHub repository.
