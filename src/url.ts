@@ -29,11 +29,7 @@ export enum UrlType {
 }
 
 
-/**
- * Returns the GitHub token from the .env file.
- * 
- * @returns {string} - The GitHub token.
- */
+// Returns the GitHub token from the .env file.
 export function getToken(): string {
     const githubToken = process.env.GITHUB_TOKEN;
     if(!githubToken){
@@ -42,14 +38,7 @@ export function getToken(): string {
     return githubToken as string;
 }
 
-/**
- * Fetches the count of pull requests from a GitHub repository.
- * 
- * This function makes a GET request to the GitHub API to retrieve
- * the total number of pull requests for the specified repository.
- * 
- * @throws {Error} - Throws an error if the request fails or the response cannot be parsed.
- */
+// Fetches the count of pull requests from a GitHub repository.
 export function test_API(): void {
     const githubToken = getToken();
     const OWNER = 'nikivakil';
@@ -72,12 +61,19 @@ export function test_API(): void {
     getPullRequestCount();
 }
 
-/**
- * Classifies the given URL as GitHub, NPM, or Other.
- * 
- * @param {string} url - The URL to classify.
- * @returns {UrlType} - The classified URL type.
- */
+export async function getOpenPRs(owner: string, repo: string, headers: any): Promise<number> {
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls?state=open`;
+    const response = await axios.get(apiUrl, { headers });
+    return response.data.length;
+}
+
+export async function getClosedPRs(owner: string, repo: string, headers: any): Promise<number> {
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls?state=closed`;
+    const response = await axios.get(apiUrl, { headers });
+    return response.data.length;
+}
+
+// Classifies the given URL as GitHub, NPM, or Other.
 export function classifyURL(url: string): UrlType {
     if (url.includes('github.com')) {
       return UrlType.GitHub;
@@ -88,24 +84,14 @@ export function classifyURL(url: string): UrlType {
     }
 }
 
-/**
- * Extracts the package name from an NPM URL.
- * 
- * @param {string} url - The NPM URL to parse.
- * @returns {string | null} - The package name or null if invalid.
- */
+// Extracts the package name from an NPM URL.
 export function extractNpmPackageName(url: string): string | null {
     const match = url.match(/npmjs\.com\/package\/([^/]+)/);
     return match ? match[1] : null;
   }
 
 
-  /**
-   * Fetches the GitHub URL for an NPM package.
-   * 
-   * @param {string} packageName - The name of the NPM package.
-   * @returns {Promise<string | null>} - A promise that resolves to the GitHub URL or null if not found.
-   */
+// Fetches the GitHub URL for an NPM package.
   export async function getNpmPackageGitHubUrl(packageName: string): Promise<string | null> {
     try {
       const response = await axios.get<NpmPackageInfo>(`https://registry.npmjs.org/${packageName}`);
@@ -122,12 +108,7 @@ export function extractNpmPackageName(url: string): string | null {
     }
   }
 
-/**
- * Parses a GitHub URL to extract owner and repo information.
- * 
- * @param {string} url - The GitHub URL to parse.
- * @returns {{ owner: string; repo: string } | null} - An object containing owner and repo, or null if invalid.
- */
+// Parses a GitHub URL to extract owner and repo information.
 function parseGitHubUrl(url: string): { owner: string; repo: string }{
     const match = url.match(/github.com\/([^/]+)\/([^/]+)/);
     return match ? { owner: match[1], repo: match[2] } : { owner: '', repo: '' };
@@ -142,14 +123,8 @@ export function get_axios_params(url: string, token: string): {owner: string, re
     };
     return {owner, repo, headers};
 }
-/**
- * Fetches the content of the README file from a GitHub repository.
- * 
- * @param {string} owner - The owner of the repository.
- * @param {string} repo - The name of the repository.
- * @returns {Promise<string>} - A promise that resolves to the content of the README file.
- * @throws {Error} - Throws an error if the request fails or the README file is not found.
- */
+
+// Fetches the content of the README file from a GitHub repository.
 export async function getReadmeContent(owner: string, repo: string): Promise<string> {
     const token = getToken();
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
@@ -259,4 +234,32 @@ export async function get_avg_Responsetime(owner: string, repo: string, headers:
     catch(error){
         console.error(error);
     }
+}
+
+// Fetch all issues from a GitHub repository
+export async function getIssues(owner: string, repo: string) {
+    const token = getToken();  // Use getToken from url.ts
+    const { headers } = get_axios_params(`https://github.com/${owner}/${repo}`, token);  // Use get_axios_params
+
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=all`;
+
+    try {
+        const response = await axios.get(apiUrl, { headers });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching issues:', error);
+        throw error;
+    }
+}
+
+export async function getOpenIssues(owner: string, repo: string, headers: any): Promise<number> {
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=open`;
+    const response = await axios.get(apiUrl, { headers });
+    return response.data.length;
+}
+
+export async function getClosedIssues(owner: string, repo: string, headers: any): Promise<number> {
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=closed`;
+    const response = await axios.get(apiUrl, { headers });
+    return response.data.length;
 }
