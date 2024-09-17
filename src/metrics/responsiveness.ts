@@ -26,7 +26,13 @@ export async function calculateResponsiveness(url:string, token: string){
     const closureTime = averageClosureTime ?? 0; //if averageClosureTime is null, set it to 0
     const responseTime = averageResponseTime ?? 0; //if averageResponseTime is null, set it to 0
 
-    const responsiveness = normalize(closureTime + responseTime, 0, 24);
+
+    const maxTimeToClose = 100; // max time for normalization in hours
+    const maxTimeToRespond = 24; // max time for normalization in hours
+    const closure_score = Math.max(0, 1 - closureTime / maxTimeToClose);
+    const response_score = Math.max(0, 1 - responseTime / maxTimeToRespond);
+    const responsiveness = (0.6 * response_score) + (0.4 * closure_score);
+
     console.log(responsiveness);
     return responsiveness;
 }
