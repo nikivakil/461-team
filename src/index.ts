@@ -1,10 +1,31 @@
+#!/usr/bin/env ts-node
+
 import { Command } from 'commander';
 import fs from 'fs';
 import path from 'path';
+<<<<<<< HEAD
 import { spawn } from 'child_process';
 import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import { getReadmeContent, parseGitHubUrl, classifyURL, UrlType, extractNpmPackageName, getNpmPackageGitHubUrl } from './url';
+=======
+import * as dotenv from 'dotenv';
+import axios from 'axios';
+import { spawn } from 'child_process';
+
+dotenv.config();
+
+const program = new Command();
+
+interface RepoContent {
+  name: string;
+  url: string;
+}
+
+interface ReadmeContent {
+  content: string;
+}
+>>>>>>> ea274f19ae236270696a2991d43dcc2f4b1a22c0
 
 interface MetricsResult {
   URL: string;
@@ -171,9 +192,17 @@ program
   .action(() => {
     console.log('Running test suite...');
 
+<<<<<<< HEAD
     const resultsFilePath = path.resolve(__dirname, '../jest-results.json');
     const coverageSummaryPath = path.resolve(__dirname, '../coverage/coverage-summary.json');
 
+=======
+    // Paths to the output files
+    const resultsFilePath = path.resolve(__dirname, '../jest-results.json');
+    const coverageSummaryPath = path.resolve(__dirname, '../coverage/coverage-summary.json');
+
+    // Run Jest and generate coverage reports
+>>>>>>> ea274f19ae236270696a2991d43dcc2f4b1a22c0
     const jestProcess = spawn('npx', [
       'jest',
       '--silent',
@@ -182,6 +211,7 @@ program
       `--outputFile=${resultsFilePath}`
     ]);
 
+<<<<<<< HEAD
     jestProcess.on('close', () => {
       // Check for coverage summary file existence
       const checkFileExists = (filePath: string, retries: number = 5) => {
@@ -196,23 +226,47 @@ program
       };
 
       if (!checkFileExists(coverageSummaryPath)) {
+=======
+    jestProcess.on('close', (code) => {
+      // Check if coverage summary file exists
+      if (!fs.existsSync(coverageSummaryPath)) {
+>>>>>>> ea274f19ae236270696a2991d43dcc2f4b1a22c0
         console.error('Coverage summary file does not exist:', coverageSummaryPath);
         return;
       }
 
+<<<<<<< HEAD
+=======
+      // Read and parse the Jest results
+>>>>>>> ea274f19ae236270696a2991d43dcc2f4b1a22c0
       try {
         const results = JSON.parse(fs.readFileSync(resultsFilePath, 'utf-8'));
         const coverageSummary = JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf-8'));
 
+<<<<<<< HEAD
         const lineCoverage = coverageSummary.total.lines.pct;
 
+=======
+        // Extract the coverage percentage from the coverage summary
+        const lineCoverage = coverageSummary.total.lines.pct;
+
+        // Display custom summary
+>>>>>>> ea274f19ae236270696a2991d43dcc2f4b1a22c0
         console.log(`Total: ${results.numTotalTests}`);
         console.log(`Passed: ${results.numPassedTests}`);
         console.log(`Line Coverage: ${lineCoverage}%`);
         console.log(`${results.numPassedTests}/${results.numTotalTests} test cases passed. ${lineCoverage}% line coverage achieved.`);
+<<<<<<< HEAD
       } catch (error) {
         console.error('Error reading Jest results or coverage summary:', error);
       } finally {
+=======
+        
+      } catch (error) {
+        console.error('Error reading Jest results or coverage summary:', error);
+      } finally {
+        // Clean up the results file
+>>>>>>> ea274f19ae236270696a2991d43dcc2f4b1a22c0
         if (fs.existsSync(resultsFilePath)) {
           fs.unlinkSync(resultsFilePath);
         }

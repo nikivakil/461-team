@@ -8,4 +8,7 @@ module.exports = {
     '^.+\\.tsx?$': 'ts-jest',  // Transform TypeScript files using ts-jest
   },
   verbose: true,  // Print individual test results with the test suite hierarchy
+  collectCoverage: true,  // Enable coverage collection
+  coverageDirectory: 'coverage',  // Directory to output coverage files
+  coverageReporters: ['json-summary', 'text', 'lcov'],  // Include 'json-summary' for coverage-summary.json
 };
