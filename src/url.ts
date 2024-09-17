@@ -109,7 +109,7 @@ export function extractNpmPackageName(url: string): string | null {
   }
 
 // Parses a GitHub URL to extract owner and repo information.
-function parseGitHubUrl(url: string): { owner: string; repo: string }{
+export function parseGitHubUrl(url: string): { owner: string; repo: string }{
     const match = url.match(/github.com\/([^/]+)\/([^/]+)/);
     return match ? { owner: match[1], repo: match[2] } : { owner: '', repo: '' };
   }

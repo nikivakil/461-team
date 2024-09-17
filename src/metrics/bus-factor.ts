@@ -1,12 +1,7 @@
 import axios from 'axios';
 import { getToken } from '../url'; // Import the function to get GitHub token
 
-/**
- * Fetches the commit history for a GitHub repository.
- * @param owner - The repository owner.
- * @param repo - The repository name.
- * @returns The list of commits.
- */
+
 async function getCommits(owner: string, repo: string) {
     const token = getToken(); // Retrieve the GitHub token
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits`; // GitHub API URL to fetch commits
@@ -25,12 +20,7 @@ async function getCommits(owner: string, repo: string) {
     }
 }
 
-/**
- * Fetches contributor stats for a GitHub repository.
- * @param owner - The repository owner.
- * @param repo - The repository name.
- * @returns The list of contributors.
- */
+
 async function getContributors(owner: string, repo: string) {
     const token = getToken(); // Retrieve the GitHub token
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contributors`; // GitHub API URL to fetch contributors
@@ -49,12 +39,7 @@ async function getContributors(owner: string, repo: string) {
     }
 }
 
-/**
- * Analyzes the contribution distribution based on commits and contributors.
- * @param commits - The list of commits.
- * @param contributors - The list of contributors.
- * @returns An object with analysis results.
- */
+
 function analyzeContributionDistribution(commits: any[], contributors: any[]) {
     const commitCounts: { [key: string]: number } = {}; // Initialize an object to track commits per author
     
@@ -89,11 +74,7 @@ function analyzeContributionDistribution(commits: any[], contributors: any[]) {
     };
 }
 
-/**
- * Gets the bus factor metric for a GitHub repository.
- * @param repoUrl - The URL of the GitHub repository.
- * @returns An object with contribution distribution analysis.
- */
+
 export async function get_bus_factor(repoUrl: string) {
     try {
         const { owner, repo } = parseRepoUrl(repoUrl); // Extract owner and repo from the URL
@@ -113,11 +94,7 @@ export async function get_bus_factor(repoUrl: string) {
     }
 }
 
-/**
- * Extracts owner and repo from a GitHub repository URL.
- * @param url - The GitHub repository URL.
- * @returns An object with owner and repo.
- */
+
 function parseRepoUrl(url: string): { owner: string, repo: string } {
     const match = url.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)$/); // Regex to parse the owner and repo from the URL
     if (!match) throw new Error('Invalid GitHub URL'); // Throw error if URL does not match the expected format
