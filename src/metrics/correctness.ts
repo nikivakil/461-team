@@ -1,12 +1,6 @@
 import axios from 'axios';
 import { getToken } from '../url'; // Assuming getToken is imported from url.ts
 
-/**
- * Fetches the issues for a GitHub repository.
- * @param owner - The repository owner.
- * @param repo - The repository name.
- * @returns The list of issues.
- */
 export async function getIssues(owner: string, repo: string) { // fetches all issues (open, closed, etc)
     const token = getToken(); // requires token for authorization
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues?state=all`;
@@ -24,11 +18,6 @@ export async function getIssues(owner: string, repo: string) { // fetches all is
     }
 }
 
-/**
- * Analyzes issues by counting open and closed ones.
- * @param issues - The list of issues.
- * @returns An object with analysis results.
- */
 export function analyzeIssues(issues: any[]) { // analyzes list of issues
     const openIssues = issues.filter(issue => issue.state === 'open'); // counts open issues
     const closedIssues = issues.filter(issue => issue.state === 'closed'); // counts closed issues
@@ -50,13 +39,6 @@ export function analyzeIssues(issues: any[]) { // analyzes list of issues
     };
 }
 
-
-/**
- * Fetches the pull requests for a GitHub repository.
- * @param owner - The repository owner.
- * @param repo - The repository name.
- * @returns The list of pull requests.
- */
 export async function getPullRequests(owner: string, repo: string) { // gets all pull requests 
     const token = getToken(); // requires token for authorization
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/pulls?state=all`;
@@ -74,11 +56,6 @@ export async function getPullRequests(owner: string, repo: string) { // gets all
     }
 }
 
-/**
- * Analyzes pull requests by counting open, closed, and merged ones.
- * @param pullRequests - The list of pull requests.
- * @returns An object with analysis results.
- */
 export function analyzePullRequests(pullRequests: any[]) { // analyzes pull requests
     const openPRs = pullRequests.filter(pr => pr.state === 'open'); // counts open pull requests
     const closedPRs = pullRequests.filter(pr => pr.state === 'closed'); // counts closed pull requests
@@ -100,13 +77,6 @@ export function analyzePullRequests(pullRequests: any[]) { // analyzes pull requ
     };
 }
 
-
-/**
- * Analyzes the issues and pull requests of a GitHub repository.
- * @param owner - The repository owner.
- * @param repo - The repository name.
- * @returns A combined analysis of issues and pull requests.
- */
 export async function analyzeRepo(owner: string, repo: string) { // fetches issues and pull requests
     try {
         // Fetch issues and pull requests
@@ -128,22 +98,13 @@ export async function analyzeRepo(owner: string, repo: string) { // fetches issu
         throw error;
     }
 }
-/**
- * Extracts owner and repo from a GitHub repository URL.
- * @param url - The GitHub repository URL.
- * @returns An object with owner and repo.
- */
+
 function parseRepoUrl(url: string): { owner: string, repo: string } {
     const match = url.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)$/);
     if (!match) throw new Error('Invalid GitHub URL');
     return { owner: match[1], repo: match[2] };
 }
 
-/**
- * Gets the responsiveness metric for a GitHub repository.
- * @param repoUrl - The URL of the GitHub repository.
- * @returns A score between 0 and 1 representing responsiveness.
- */
 export async function get_responsiveness_metric(repoUrl: string): Promise<number> {
     try {
         const { owner, repo } = parseRepoUrl(repoUrl);
