@@ -1,8 +1,11 @@
+#!/usr/bin/env ts-node
+
 import { Command } from 'commander';
 import fs from 'fs';
 import path from 'path';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
+import { spawn } from 'child_process';
 
 dotenv.config();
 
@@ -143,14 +146,55 @@ program
     }
   });
 
-program
+  program
   .command('test')
   .description('Run test suite')
   .action(() => {
     console.log('Running test suite...');
-    // Add your test suite execution logic here
-    console.log('X/Y test cases passed. Z% line coverage achieved.');
-    process.exit(0);
+
+    // Paths to the output files
+    const resultsFilePath = path.resolve(__dirname, '../jest-results.json');
+    const coverageSummaryPath = path.resolve(__dirname, '../coverage/coverage-summary.json');
+
+    // Run Jest and generate coverage reports
+    const jestProcess = spawn('npx', [
+      'jest',
+      '--silent',
+      '--coverage',
+      '--json',
+      `--outputFile=${resultsFilePath}`
+    ]);
+
+    jestProcess.on('close', (code) => {
+      // Check if coverage summary file exists
+      if (!fs.existsSync(coverageSummaryPath)) {
+        console.error('Coverage summary file does not exist:', coverageSummaryPath);
+        return;
+      }
+
+      // Read and parse the Jest results
+      try {
+        const results = JSON.parse(fs.readFileSync(resultsFilePath, 'utf-8'));
+        const coverageSummary = JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf-8'));
+
+        // Extract the coverage percentage from the coverage summary
+        const lineCoverage = coverageSummary.total.lines.pct;
+
+        // Display custom summary
+        console.log(`Total: ${results.numTotalTests}`);
+        console.log(`Passed: ${results.numPassedTests}`);
+        console.log(`Line Coverage: ${lineCoverage}%`);
+        console.log(`${results.numPassedTests}/${results.numTotalTests} test cases passed. ${lineCoverage}% line coverage achieved.`);
+        
+      } catch (error) {
+        console.error('Error reading Jest results or coverage summary:', error);
+      } finally {
+        // Clean up the results file
+        if (fs.existsSync(resultsFilePath)) {
+          fs.unlinkSync(resultsFilePath);
+        }
+      }
+    });
   });
 
 program.parse(process.argv);
