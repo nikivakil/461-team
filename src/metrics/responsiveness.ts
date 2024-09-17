@@ -4,10 +4,14 @@ import * as url_t from '../url';
 dotenv.config();
 
 
-function normalize(value: number, min: number, max: number): number {
+function normalize(closureTime: number, responseTime: number): number {
     // Ensure min and max are not the same to avoid division by zero
-    if (max === min) return 0;
-    return (value - min) / (max - min);
+    const maxTimeToClose = 5 * 24; // max time for normalization in hours (5 days)
+    const maxTimeToRespond = 36; // max time for response to pull request in hours (1.5 days)
+    const closure_score = Math.max(0, 1 - closureTime / maxTimeToClose);
+    const response_score = Math.max(0, 1 - responseTime / maxTimeToRespond);
+    const responsiveness = (0.6 * response_score) + (0.4 * closure_score);
+    return responsiveness;
 }
 
 export function getTimeDifferenceInHours(start: string, end: string): number{ //function to calculate the time difference in hours
@@ -26,12 +30,12 @@ export async function calculateResponsiveness(url:string, token: string){
     const closureTime = averageClosureTime ?? 0; //if averageClosureTime is null, set it to 0
     const responseTime = averageResponseTime ?? 0; //if averageResponseTime is null, set it to 0
 
+    if(closureTime === 0 && responseTime === 0){
+        console.log("No issues or pull requests found");
+        return 0;
+    }
 
-    const maxTimeToClose = 100; // max time for normalization in hours
-    const maxTimeToRespond = 24; // max time for normalization in hours
-    const closure_score = Math.max(0, 1 - closureTime / maxTimeToClose);
-    const response_score = Math.max(0, 1 - responseTime / maxTimeToRespond);
-    const responsiveness = (0.6 * response_score) + (0.4 * closure_score);
+    const responsiveness = normalize(closureTime, responseTime);
 
     console.log(responsiveness);
     return responsiveness;
