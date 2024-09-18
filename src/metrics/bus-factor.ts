@@ -1,113 +1,88 @@
 import axios from 'axios';
-import { getToken } from '../url'; // Import the function to get GitHub token
+import { getToken, parseGitHubUrl, get_axios_params, getCommitsAndContributors} from '../url';
+import logger from '../logger';
 
-
-async function getCommits(owner: string, repo: string) {
-    const token = getToken(); // Retrieve the GitHub token
-    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits`; // GitHub API URL to fetch commits
-
-    try {
-        // Make a GET request to the GitHub API
-        const response = await axios.get(apiUrl, {
-            headers: {
-                Authorization: `token ${token}` // Include token in the request header for authorization
-            }
-        });
-        return response.data; // Return the list of commits
-    } catch (error) {
-        console.error('Error fetching commits:', error); // Log any error that occurs
-        throw error; // Rethrow the error for further handling
-    }
+interface BusFactorResult {
+  busFactor: number;
+  normalizedScore: number;
+  latency: number;
 }
 
-
-async function getContributors(owner: string, repo: string) {
-    const token = getToken(); // Retrieve the GitHub token
-    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contributors`; // GitHub API URL to fetch contributors
-
-    try {
-        // Make a GET request to the GitHub API
-        const response = await axios.get(apiUrl, {
-            headers: {
-                Authorization: `token ${token}` // Include token in the request header for authorization
-            }
-        });
-        return response.data; // Return the list of contributors
-    } catch (error) {
-        console.error('Error fetching contributors:', error); // Log any error that occurs
-        throw error; // Rethrow the error for further handling
-    }
-}
-
-
-function analyzeContributionDistribution(commits: any[], contributors: any[]) {
-    const commitCounts: { [key: string]: number } = {}; // Initialize an object to track commits per author
+function calculateBusFactor(commits: any[], contributors: any[]): Omit<BusFactorResult, 'latency'> {
+    logger.debug('Calculating bus factor', { commitCount: commits.length, contributorCount: contributors.length });
     
-    // Count the number of commits per author
+    const commitCounts: { [key: string]: number } = {};
+    
     commits.forEach(commit => {
-        const author = commit.commit.author.name; // Get the author of the commit
-        commitCounts[author] = (commitCounts[author] || 0) + 1; // Increment the commit count for the author
+      const author = commit.commit.author.name;
+      commitCounts[author] = (commitCounts[author] || 0) + 1;
     });
-
-    const totalCommits = commits.length; // Total number of commits
-    const totalContributors = contributors.length; // Total number of contributors
-
-    const distribution = Object.values(commitCounts); // Array of commit counts per author
-    const maxCommits = Math.max(...distribution, 1); // Find the maximum number of commits by a single author (avoid division by zero)
-
-    // Calculate the bus factor
+  
+    const totalCommits = commits.length;
+    const totalContributors = contributors.length;
+  
+    if (totalCommits === 0 || totalContributors === 0) {
+      logger.warn('Repository has no commits or contributors', { totalCommits, totalContributors });
+      return { busFactor: 1, normalizedScore: 0 };
+    }
+  
+    const sortedContributions = Object.values(commitCounts).sort((a, b) => b - a);
+    
     let accumulatedCommits = 0;
     let busFactor = 0;
-
-    // Sort authors by number of commits in descending order
-    for (const count of distribution.sort((a, b) => b - a)) {
-        accumulatedCommits += count; // Accumulate the number of commits
-        busFactor += 1; // Count the number of top contributors
-        if (accumulatedCommits >= totalCommits / 2) break; // Stop when half of the commits are accounted for
+  
+    for (const count of sortedContributions) {
+      accumulatedCommits += count;
+      busFactor++;
+      if (accumulatedCommits > totalCommits * 0.8) break; // Increased from 0.5 to 0.8
     }
+  
+    const normalizedScore = normalizeScore(busFactor, totalContributors, totalCommits);
+  
+    logger.debug('Bus factor calculation complete', { busFactor, normalizedScore });
+    return { busFactor, normalizedScore };
+  }
 
-    return {
-        totalCommits,
-        totalContributors,
-        maxCommits,
-        busFactor // Number of contributors needed to reach half of the total commits
-    };
+function normalizeScore(busFactor: number, totalContributors: number, totalCommits: number): number {
+  logger.debug('Normalizing bus factor score', { busFactor, totalContributors, totalCommits });
+  
+  if (totalContributors === 0 || totalCommits < 20) {
+    logger.warn('Repository has too few contributors or commits for meaningful score', { totalContributors, totalCommits });
+    return 0; // Penalize repos with very few commits
+  }
+
+  const contributorRatio = busFactor / totalContributors;
+  const commitThreshold = Math.min(totalCommits / 100, 1000); // Adjust based on repo size
+
+  let score = contributorRatio * (totalCommits / commitThreshold);
+  
+  // Penalize projects with very few contributors
+  if (totalContributors < 3) {
+    logger.info('Applying penalty for low contributor count', { totalContributors });
+    score *= 0.5;
+  }
+
+  const finalScore = Math.max(0, Math.min(1, score));
+  logger.debug('Normalized score calculated', { finalScore });
+  return finalScore;
 }
 
-
-export async function get_bus_factor(repoUrl: string) {
+export async function get_bus_factor(url: string): Promise<BusFactorResult> {
+    const startTime = Date.now();
+    logger.info('Starting bus factor calculation', { url });
+  
     try {
-        const { owner, repo } = parseRepoUrl(repoUrl); // Extract owner and repo from the URL
-
-        // Fetch and analyze commits and contributors
-        const [commits, contributors] = await Promise.all([
-            getCommits(owner, repo),
-            getContributors(owner, repo)
-        ]);
-
-        const analysis = analyzeContributionDistribution(commits, contributors); // Analyze contribution distribution
-
-        return analysis; // Return the analysis results
+      const { owner, repo, headers } = get_axios_params(url, getToken());
+      logger.debug('Fetching commits and contributors', { owner, repo });
+      const { commits, contributors } = await getCommitsAndContributors(owner, repo, headers);
+      const result = calculateBusFactor(commits, contributors);
+  
+      const latency = Date.now() - startTime;
+      logger.info('Bus factor calculation complete', { url, latency, ...result });
+  
+      return { ...result, latency };
     } catch (error) {
-        console.error('Error calculating bus factor:', error); // Log any error that occurs
-        throw error; // Rethrow the error for further handling
+      logger.error('Error calculating bus factor', { url, error: (error as Error).message });
+      return { busFactor: 1, normalizedScore: 0, latency: 0 };
     }
-}
-
-
-function parseRepoUrl(url: string): { owner: string, repo: string } {
-    const match = url.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)$/); // Regex to parse the owner and repo from the URL
-    if (!match) throw new Error('Invalid GitHub URL'); // Throw error if URL does not match the expected format
-    return { owner: match[1], repo: match[2] }; // Return the extracted owner and repo
-}
-
-// Usage example
-const REPO_URL = 'https://github.com/nikivakil/461-team'; // Example repository URL
-
-get_bus_factor(REPO_URL)
-    .then(analysis => {
-        console.log('Bus Factor Analysis:', analysis); // Log the analysis results
-    })
-    .catch(error => {
-        console.error('Error:', error.message); // Log any error that occurs
-    });
+  }
