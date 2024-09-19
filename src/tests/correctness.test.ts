@@ -1,115 +1,68 @@
-// src/tests/correctness.test.ts
+import logger from '../logger';
+import { getCorrectnessMetric } from '../metrics/correctness';
+import * as url from '../url';
 
-/*
-import axios from 'axios';
-import { getToken } from '../url';
-import {
-    getIssues,
-    getPullRequests,
-    analyzeIssues,
-    analyzePullRequests,
-    analyzeRepo,
-    get_responsiveness_metric
-} from '../metrics/correctness';
-
-jest.mock('axios');
+// Mock the functions that make API calls
 jest.mock('../url', () => ({
-    getToken: jest.fn()
+    getToken: jest.fn(),
+    get_axios_params: jest.fn(),
+    getOpenIssues: jest.fn(),
+    getClosedIssues: jest.fn(),
+    getOpenPRs: jest.fn(),
+    getClosedPRs: jest.fn(),
 }));
 
-describe('GitHub API functions', () => {
-    const mockToken = 'mockToken';
-    const mockIssues = [
-        { state: 'open', created_at: '2024-01-01T00:00:00Z', closed_at: '' },
-        { state: 'closed', created_at: '2024-01-01T00:00:00Z', closed_at: '2024-01-02T00:00:00Z' }
-    ];
-    const mockPullRequests = [
-        { state: 'open', created_at: '2024-01-01T00:00:00Z', closed_at: '' },
-        { state: 'closed', created_at: '2024-01-01T00:00:00Z', closed_at: '2024-01-02T00:00:00Z' }
-    ];
+// Mock the logger
+jest.mock('../logger', () => ({
+    info: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),  // Use a simple mock implementation
+}));
+
+describe('Test getCorrectnessMetric', () => {
+    const mockGitHubUrl = 'https://github.com/nikivakil/461-team';
+    const mockToken = 'mocked_token';
+    const mockOwner = 'nikivakil';
+    const mockRepo = '461-team';
+    const mockHeaders = { Authorization: `token ${mockToken}` };
 
     beforeEach(() => {
-        (getToken as jest.Mock).mockReturnValue(mockToken);
+        jest.clearAllMocks();
+
+        // Mocking the token and axios parameters
+        (url.getToken as jest.Mock).mockReturnValue(mockToken);
+        (url.get_axios_params as jest.Mock).mockReturnValue({ owner: mockOwner, repo: mockRepo, headers: mockHeaders });
     });
 
-    // test: fetches issues successfully
-    it('fetches issues successfully', async () => {
-        (axios.get as jest.Mock).mockResolvedValue({ data: mockIssues });
-        
-        const issues = await getIssues('owner', 'repo');
-        expect(issues).toEqual(mockIssues);
-        expect(axios.get).toHaveBeenCalledWith('https://api.github.com/repos/owner/repo/issues?state=all', {
-            headers: { Authorization: `token ${mockToken}` }
+    it('should handle errors and return 0 on failure', async () => {
+        // Mock logger.error
+        const loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {
+            // Do nothing here
+            return logger;  // Return logger instance if it's expected
         });
-    });
-
-    // test: handles error in getIssues
-    it('handles error in getIssues', async () => {
-        (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
-        
-        await expect(getIssues('owner', 'repo')).rejects.toThrow('Network error');
-    });
-
-    // test: analyzes issues correctly
-    it('analyzes issues correctly', () => {
-        const analysis = analyzeIssues(mockIssues);
-        expect(analysis).toEqual({
-            totalIssues: 2,
-            openIssues: 1,
-            closedIssues: 1,
-            avgTimeToClose: 24
+    
+        // Mock API calls to throw an error
+        (url.getOpenIssues as jest.Mock).mockRejectedValue(new Error('Error calculating correctness metric'));
+    
+       // console.log('Before calling getCorrectnessMetric');
+        const result = await getCorrectnessMetric(mockGitHubUrl);
+    
+       // console.log('Result:', result);
+       // console.log('Logger Error Calls:', loggerErrorSpy.mock.calls);
+    
+        expect(result).toEqual({
+            score: 0,
+            latency: expect.any(Number),
         });
+    
+        // Check the actual logged error message and metadata
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+            'Error calculating correctness metric',
+            { error: 'Error calculating correctness metric', url: mockGitHubUrl }
+        );
+    
+        loggerErrorSpy.mockRestore();
     });
-
-    // test: analyzes pull requests correctly
-    it('analyzes pull requests correctly', () => {
-        const analysis = analyzePullRequests(mockPullRequests);
-        expect(analysis).toEqual({
-            totalPRs: 2,
-            openPRs: 1,
-            closedPRs: 1,
-            avgTimeToClose: 24
-        });
-    });
-
-    // test: analyzes repository correctly
-    it('analyzes repository correctly', async () => {
-        (axios.get as jest.Mock).mockResolvedValueOnce({ data: mockIssues })
-                              .mockResolvedValueOnce({ data: mockPullRequests });
-        
-        const analysis = await analyzeRepo('owner', 'repo');
-        expect(analysis).toEqual({
-            issueAnalysis: {
-                totalIssues: 2,
-                openIssues: 1,
-                closedIssues: 1,
-                avgTimeToClose: 24
-            },
-            prAnalysis: {
-                totalPRs: 2,
-                openPRs: 1,
-                closedPRs: 1,
-                avgTimeToClose: 24
-            }
-        });
-    });
-
-    // test: calculates responsiveness metric correctly
-    it('calculates responsiveness metric correctly', async () => {
-        (axios.get as jest.Mock).mockResolvedValueOnce({ data: mockIssues })
-                              .mockResolvedValueOnce({ data: mockPullRequests });
-        
-        const score = await get_responsiveness_metric('https://github.com/owner/repo');
-        expect(score).toBeCloseTo(1 - 24 / 100); // Assuming maxTimeToClose is 100
-    });
-
-    // test: handles error in get_responsiveness_metric
-    it('handles error in get_responsiveness_metric', async () => {
-        (axios.get as jest.Mock).mockRejectedValueOnce(new Error('Issues fetch error'))
-                               .mockRejectedValueOnce(new Error('Pull requests fetch error'));
-        
-        await expect(get_responsiveness_metric('https://github.com/owner/repo')).rejects.toThrow('Issues fetch error');
-    });
+    
 });
-
-*/
