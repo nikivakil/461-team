@@ -1,7 +1,8 @@
-import { getToken, parseGitHubUrl, getOpenPRs, getClosedPRs, classifyURL, UrlType, test_API, extractNpmPackageName, getNpmPackageGitHubUrl, getReadmeContent, get_avg_ClosureTime, getCommitsAndContributors } from '../url';
+import { getToken, parseGitHubUrl, getOpenPRs, getClosedPRs, classifyURL, UrlType, test_API, extractNpmPackageName, getNpmPackageGitHubUrl, getReadmeContent, get_avg_ClosureTime, getCommitsAndContributors, getIssues, get_axios_params } from '../url';
 import axios from 'axios';
 import logger from '../logger';
-import * as responsive from '../metrics/responsiveness'; 
+import * as url from '../url';
+// import * as responsive from '../metrics/responsiveness'; 
 
 // Mocking dotenv.config to prevent loading actual environment variables
 jest.mock('dotenv', () => ({
@@ -365,6 +366,78 @@ describe('getCommitsAndContributors', () => {
             repo,
             error: mockError.message,
         });
+    });
+});
+
+
+describe('Test getIssues function', () => {
+    const mockOwner = 'testOwner';
+    const mockRepo = 'testRepo';
+    const mockToken = 'test-token';
+    const mockHeaders = { 
+        Authorization: `token ${mockToken}`,
+        Accept: 'application/vnd.github.v3+json',  
+    };
+    const mockIssues = [
+        { id: 1, state: 'open', title: 'Issue 1' },
+        { id: 2, state: 'closed', title: 'Issue 2' },
+    ];
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('should fetch issues successfully', async () => {
+        // Mock getToken and get_axios_params for this specific test
+        jest.spyOn(url, 'getToken').mockReturnValue(mockToken);
+        jest.spyOn(url, 'get_axios_params').mockReturnValue({
+            owner: mockOwner,
+            repo: mockRepo,
+            headers: mockHeaders
+        });
+        
+
+        // Mock axios response
+        (axios.get as jest.Mock).mockResolvedValue({ data: mockIssues });
+
+        const result = await url.getIssues(mockOwner, mockRepo);
+
+        // Check that the API call was made with the correct URL and headers
+        expect(axios.get).toHaveBeenCalledWith(
+            `https://api.github.com/repos/${mockOwner}/${mockRepo}/issues?state=all`,
+            { headers: mockHeaders }
+        );
+
+        // Check that the returned result matches the mock issues
+        expect(result).toEqual(mockIssues);
+
+        // Check that the debug logger was called correctly
+        expect(logger.debug).toHaveBeenCalledWith('Fetching all issues', { owner: mockOwner, repo: mockRepo });
+        expect(logger.debug).toHaveBeenCalledWith('Issues fetched', { owner: mockOwner, repo: mockRepo, issueCount: mockIssues.length });
+    });
+
+    it('should log an error and throw when API call fails', async () => {
+        // Mock getToken and get_axios_params for this specific test
+        jest.spyOn(url, 'getToken').mockReturnValue(mockToken);
+        jest.spyOn(url, 'get_axios_params').mockReturnValue({
+            owner: mockOwner,
+            repo: mockRepo,
+            headers: mockHeaders
+        });
+
+        const mockError = new Error('API error');
+
+        // Mock axios to reject with an error
+        (axios.get as jest.Mock).mockRejectedValue(mockError);
+
+        // Expect the function to throw an error
+        await expect(url.getIssues(mockOwner, mockRepo)).rejects.toThrow('API error');
+
+        // Check that the error logger was called with the correct arguments
+        expect(logger.error).toHaveBeenCalledWith(
+            'Error fetching issues',
+            { owner: mockOwner, repo: mockRepo, error: mockError.message }
+        );
     });
 });
 });
