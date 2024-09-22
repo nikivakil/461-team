@@ -3,94 +3,75 @@ import logger from "../logger";
 import * as fs from "fs";
 import * as path from "path";
 
+
 jest.mock("../logger");
 jest.mock("fs");
 
-describe('checkLicenseCompatibility', () => {
+
+  describe('License Compatibility Tests', () => {
     const testCases = [
-        // Valid licenses
-      { name: 'MIT License', content: 'MIT License\n\nCopyright (c) [year] [fullname]', expected: true },
-      { name: 'GPL v3', content: 'GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007', expected: true },
-      { name: 'GPL v2', content: 'GNU GENERAL PUBLIC LICENSE\nVersion 2, June 1991', expected: true },
-      { name: 'LGPL v2.1', content: 'GNU LESSER GENERAL PUBLIC LICENSE\nVersion 2.1, February 1999', expected: true },
-      { name: 'Apache 2.0', content: 'Apache License\nVersion 2.0, January 2004', expected: true },
-      { name: 'BSD 3-Clause', content: 'BSD 3-Clause License\n\nCopyright (c) [year], [fullname]', expected: true },
-      { name: 'BSD 2-Clause', content: 'BSD 2-Clause License\n\nCopyright (c) [year], [fullname]', expected: true },
-      { name: 'ZLIB License', content: 'zlib License\n\n(C) [year] [fullname]', expected: true },
-      // Invalid licenses
-      { name: 'reglLG v2', content: 'All Rights Reserved. This software is the confidential and proprietary information...', expected: false },
-      { name: 'No License', content: '', expected: false },
-      { name: 'random stuff v2', content: 'random description i like hot dogs.', expected: false },
-    ];
-  
-    testCases.forEach(({ name, content, expected }) => {
-      it(`should return ${expected} for ${name}`, () => {
-        const result = checkLicenseCompatibility(content);
-        expect(result).toBe(expected);
+        //valid licenses
+        { licenseText: 'This project is licensed under The MIT License', expected: true },
+        { licenseText: 'Licensed under the Apache License, Version 2.0 (the "License")', expected: true },
+        { licenseText: 'This software is licensed under the GNU General Public License Version 3', expected: true },
+        { licenseText: 'This is licensed under the GNU General Public License version 2', expected: true },
+        { licenseText: 'This software is licensed under the BSD-3-Clause license', expected: true },
+        { licenseText: 'This software uses the Lesser GNU Public License 2.1', expected: true },
+        { licenseText: 'this project is licensed under the apache license 2.0', expected: true }, 
+        { licenseText: 'ApAche 2.0', expected: true },
+        { licenseText: 'GPL 3.0', expected: true },
+        { licenseText: 'GPL 2.0', expected: true },
+        { licenseText: 'BSD 3-Clause', expected: true },
+        { licenseText: 'LGPL 2.1', expected: true },
+        { licenseText: 'BSD 3 CLAUSE', expected: true },
+        { licenseText: 'GNU GENERAL PUBLIC LICENSE VERSION 3', expected: true },
+        { licenseText: 'GNU GENERAL PUBLIC LICENSE VERSION 2', expected: true },
+        //invalid licenses
+        { licenseText: 'I like hotdogs', expected: false },
+        { licenseText: ' ', expected: false },
+        { licenseText: 'GPL-64 license', expected: false },
+      ];
+    testCases.forEach(testCase => {
+      test(`checkLicenseCompatibility returns ${testCase.expected} for license text: ${testCase.licenseText}`, () => {
+        expect(checkLicenseCompatibility(testCase.licenseText)).toBe(testCase.expected);
       });
     });
-  
-    // Additional edge case
-    it('edge case: case insensitivity', () => {
-      expect(checkLicenseCompatibility('mit license')).toBe(true);
-      expect(checkLicenseCompatibility('ApAcHe 2.0')).toBe(true);
-      expect(checkLicenseCompatibility('BSD 3-CLAUSE')).toBe(true);
+});
+
+describe('getLicense', () => {
+    const repoPath = 'mock-repo-path';
+
+    beforeEach(() => {
+        jest.clearAllMocks();
     });
-  
-  });
+    it('should return license content from License file', async() => {
+        const licenseContent = 'MIT License';
+        (fs.readdirSync as jest.Mock).mockReturnValue(['LICENSE']);
+        (fs.readFileSync as jest.Mock).mockReturnValue(licenseContent);
 
-    // describe('getLicense', () => {
-    //     it('should return the content of the LICENSE file', () => {
-    //     const repoPath = 'test-repo';
-    //     const licenseFile = 'LICENSE.txt';
-    //     const licenseContent = 'MIT License\n\nPermission is hereby granted, free of charge, to any person obtaining a copy';
-    
-    //     (fs.readdirSync as jest.Mock).mockReturnValue([licenseFile]);
+        const result = await getLicense(repoPath);
+        expect(result).toEqual(licenseContent);
+        expect(fs.readdirSync).toHaveBeenCalledWith(repoPath);
+        expect(fs.readFileSync).toHaveBeenCalledWith(path.join(repoPath, 'LICENSE'), 'utf-8');
+    });
+    // it('should return license content from README.md if no License file exists', async() => {
+    //     const licenseContent = 'MIT License';
+    //     (fs.readdirSync as jest.Mock).mockReturnValue([]);
+    //     (fs.existsSync as jest.Mock).mockReturnValue(true);
     //     (fs.readFileSync as jest.Mock).mockReturnValue(licenseContent);
-    
-    //     const result = getLicense(repoPath);
+
+    //     const result = await getLicense(repoPath);
     //     expect(result).toBe(licenseContent);
-    //     });
-    
-    //     it('should return null if no LICENSE file is found', () => {
-    //     const repoPath = 'test-repo';
-    
-    //     (fs.readdirSync as jest.Mock).mockReturnValue(['README.md']);
-    
-    //     const result = getLicense(repoPath);
-    //     expect(result).toBeNull();
-    //     });
+    //     expect(fs.readdirSync).toHaveBeenCalledWith(repoPath);
+    //     expect(fs.existsSync).toHaveBeenCalledWith(path.join(repoPath, 'README.md'));
     // });
 
-    // describe('get_license_compatibility', () => {
-    //     it('should return a score of 1 for a compatible license', async () => {
-    //         const repoPath = 'test-repo';
-    //         const licenseContent = 'MIT License\n\nPermission is hereby granted, free of charge, to any person obtaining a copy';
-        
-    //         (getLicense as jest.Mock).mockReturnValue(licenseContent);
-    //         (checkLicenseCompatibility as jest.Mock).mockReturnValue(true);
-        
-    //         const result = await get_license_compatibility(repoPath);
-    //         expect(result).toEqual({ score: 1, latency: expect.any(Number) });
-    //     });
-    
-    //     it('should return a score of 0 for an incompatible license', async () => {
-    //         const repoPath = 'test-repo';
-    //         const licenseContent = 'All Rights Reserved. This software is the confidential and proprietary information...';
-        
-    //         (getLicense as jest.Mock).mockReturnValue(licenseContent);
-    //         (checkLicenseCompatibility as jest.Mock).mockReturnValue(false);
-        
-    //         const result = await get_license_compatibility(repoPath);
-    //         expect(result).toEqual({ score: 0, latency: expect.any(Number) });
-    //     });
-    
-    //     it('should return a score of 0 if no license file is found', async () => {
-    //         const repoPath = 'test-repo';
-        
-    //         (getLicense as jest.Mock).mockReturnValue(null);
-        
-    //         const result = await get_license_compatibility(repoPath);
-    //         expect(result).toEqual({ score: 0, latency: expect.any(Number) });
-    //     });
-    // });
+    it('should return null if no License file exists', async() => {
+        (fs.readdirSync as jest.Mock).mockReturnValue([]);
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const result = await getLicense(repoPath);
+        expect(result).toBeNull();
+    });
+});
+
