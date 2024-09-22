@@ -346,9 +346,9 @@ program
       try {
         const results = JSON.parse(fs.readFileSync(resultsFilePath, 'utf-8'));
         const coverageSummary = JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf-8'));
-
-        const lineCoverage = coverageSummary.total.lines.pct;
-
+      
+        const lineCoverage = Math.round(coverageSummary.total.lines.pct);  // Round to nearest whole number
+      
         console.log(`Total: ${results.numTotalTests}`);
         console.log(`Passed: ${results.numPassedTests}`);
         console.log(`Line Coverage: ${lineCoverage}%`);
