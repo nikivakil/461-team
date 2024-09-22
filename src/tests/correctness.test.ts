@@ -17,7 +17,7 @@ jest.mock('../logger', () => ({
     info: jest.fn(),
     debug: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn(),  // Use a simple mock implementation
+    error: jest.fn(),
 }));
 
 describe('Test getCorrectnessMetric', () => {
@@ -38,18 +38,13 @@ describe('Test getCorrectnessMetric', () => {
     it('should handle errors and return 0 on failure', async () => {
         // Mock logger.error
         const loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {
-            // Do nothing here
-            return logger;  // Return logger instance if it's expected
+            return logger;
         });
     
         // Mock API calls to throw an error
         (url.getOpenIssues as jest.Mock).mockRejectedValue(new Error('Error calculating correctness metric'));
     
-       // console.log('Before calling getCorrectnessMetric');
         const result = await getCorrectnessMetric(mockGitHubUrl);
-    
-       // console.log('Result:', result);
-       // console.log('Logger Error Calls:', loggerErrorSpy.mock.calls);
     
         expect(result).toEqual({
             score: 0,
@@ -64,5 +59,44 @@ describe('Test getCorrectnessMetric', () => {
     
         loggerErrorSpy.mockRestore();
     });
-    
+
+    it('should fetch repository statistics and calculate correctness score', async () => {
+        // Mock the API calls to return valid data
+        (url.getOpenIssues as jest.Mock).mockResolvedValue(10);
+        (url.getClosedIssues as jest.Mock).mockResolvedValue(20);
+        (url.getOpenPRs as jest.Mock).mockResolvedValue(5);
+        (url.getClosedPRs as jest.Mock).mockResolvedValue(15);
+
+        const startTime = Date.now();
+
+        const result = await getCorrectnessMetric(mockGitHubUrl);
+
+        expect(result).toEqual({
+            score: expect.any(Number), // This depends on the actual calculation logic
+            latency: expect.any(Number)
+        });
+
+        // Check if the repository statistics were logged correctly
+        expect(logger.debug).toHaveBeenCalledWith('Fetched repository statistics', {
+            openIssues: 10,
+            closedIssues: 20,
+            totalIssues: 30,
+            openPRs: 5,
+            closedPRs: 15,
+            totalPRs: 20
+        });
+
+        // Ensure the correctness metric calculation is logged
+        expect(logger.info).toHaveBeenCalledWith('Correctness metric calculation complete', {
+            url: mockGitHubUrl,
+            score: expect.any(Number), // Match the calculated score
+            latency: expect.any(Number) // Check that latency was logged
+        });
+
+        // Check if the latency was calculated and logged
+        const latency = result.latency;
+        const expectedLatency = Date.now() - startTime;
+        expect(latency).toBeGreaterThanOrEqual(0);
+        expect(latency).toBeLessThanOrEqual(expectedLatency);
+    });
 });
