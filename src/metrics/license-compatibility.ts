@@ -3,15 +3,24 @@ import path from 'path';
 import logger from '../logger';
 
 const COMPATIBLE_LICENSES = [
-    { name: 'GNU LESSER GENERAL PUBLIC LICENSE V2.1', keywords: ['LGPL', 'GNU LESSER GENERAL PUBLIC LICENSE', '2.1'] },
-    { name: 'GNU GENERAL PUBLIC LICENSE V2', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '2'] },
-    { name: 'GNU GENERAL PUBLIC LICENSE V3', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '3'] },
-    { name: 'MIT LICENSE', keywords: ['MIT'] },
-    { name: 'BSD 2-CLAUSE LICENSE', keywords: ['BSD', '2-CLAUSE'] },
-    { name: 'BSD 3-CLAUSE LICENSE', keywords: ['BSD', '3-CLAUSE'] },
-    { name: 'APACHE LICENSE 2.0', keywords: ['APACHE', '2.0'] },
-    { name: 'ZLIB LICENSE', keywords: ['ZLIB'] },
-];
+    { name: 'MIT', identifiers: ['MIT', 'MIT LICENSE'] },
+    { name: 'Apache-2.0', identifiers: ['APACHE', 'APACHE 2', 'APACHE 2.0', 'APACHE LICENSE 2.0'] },
+    { name: 'GPL-3.0', identifiers: ['GPL 3', 'GPL 3.0', 'GNU GENERAL PUBLIC LICENSE VERSION 3'] },
+    { name: 'GPL-2.0', identifiers: ['GPL 2', 'GPL 2.0', 'GNU GENERAL PUBLIC LICENSE VERSION 2'] },
+    { name: 'BSD-3-Clause', identifiers: ['BSD 3', 'BSD 3 CLAUSE', 'BSD-3-CLAUSE'] },
+    { name: 'LGPL-2.1', identifiers: ['LGPL 2.1', 'LESSER GNU PUBLIC LICENSE 2.1'] }
+  ];
+
+//old const COMPATIBLE_LICENSES = [
+//     { name: 'GNU LESSER GENERAL PUBLIC LICENSE V2.1', keywords: ['LGPL', 'GNU LESSER GENERAL PUBLIC LICENSE', '2.1'] },
+//     { name: 'GNU GENERAL PUBLIC LICENSE V2', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '2'] },
+//     { name: 'GNU GENERAL PUBLIC LICENSE V3', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '3'] },
+//     { name: 'MIT LICENSE', keywords: ['MIT'] },
+//     { name: 'BSD 2-CLAUSE LICENSE', keywords: ['BSD', '2-CLAUSE'] },
+//     { name: 'BSD 3-CLAUSE LICENSE', keywords: ['BSD', '3-CLAUSE'] },
+//     { name: 'APACHE LICENSE 2.0', keywords: ['APACHE', '2.0'] },
+//     { name: 'ZLIB LICENSE', keywords: ['ZLIB'] },
+// ];
 
 interface LicenseResult {
     score: number;
@@ -48,7 +57,7 @@ export async function get_license_compatibility(repoPath: string): Promise<Licen
     }
 }
 
-async function getLicense(repoPath: string): Promise<string | null> {
+export async function getLicense(repoPath: string): Promise<string | null> {
     logger.debug('Searching for license file', { repoPath });
     // Check for LICENSE file first
     const files = fs.readdirSync(repoPath);
@@ -88,12 +97,25 @@ function extractLicenseFromReadme(readmeContent: string): string | null {
     return null;
 }
 
-function checkLicenseCompatibility(licenseText: string): boolean {
-    logger.debug('Checking license compatibility');
-    const upperCaseLicense = licenseText.toUpperCase();
-    const compatible = COMPATIBLE_LICENSES.some(license => 
-        license.keywords.every(keyword => upperCaseLicense.includes(keyword.toUpperCase()))
-    );
-    logger.debug('License compatibility check result', { compatible });
-    return compatible;
+// export function checkLicenseCompatibility(licenseText: string): boolean {
+//     if(!licenseText) return false;
+//     const upperCaseLicense = licenseText.toUpperCase(); // Convert to uppercase for case-insensitive comparison 
+   
+//     return COMPATIBLE_LICENSES.some(license => {
+//         return license.keywords.every(keyword => upperCaseLicense.includes(keyword.toUpperCase()));
+//     });
+// }
+
+export function checkLicenseCompatibility(licenseText: string): boolean {
+    if (!licenseText) return false;
+    const upperCaseLicense = licenseText.toUpperCase().trim();
+
+    for (const license of COMPATIBLE_LICENSES) {
+        if (license.identifiers.some(identifier => upperCaseLicense.includes(identifier))) {
+            return true;
+        }
+   
+    }
+    return false;
 }
+
