@@ -236,6 +236,7 @@ A set of test cases with various license texts (both valid and invalid) is provi
 2. getLicense:
 
 This function retrieves the license content from a repository's directory.
+
 It tests:
 - If the license file (LICENSE) exists, it returns its content.
 - If there's no LICENSE file, the license is extracted from the README.md file.
@@ -244,6 +245,7 @@ It tests:
 3. get_license_compatibility:
 
 This function checks the license compatibility of a repository and returns a compatibility score.
+
 Tests ensure:
 - A valid license (like MIT) gives a score of 1.
 - An incompatible or missing license results in a score of 0.
@@ -258,6 +260,7 @@ Functions Tested:
 1. getTimeDifferenceInHours:
 
 Calculates the time difference in hours between two timestamps.
+
 Tests check for:
 - Correct time difference (e.g., for 36 hours, 4.5 hours).
 - Cases where times are identical (result should be 0).
@@ -265,6 +268,7 @@ Tests check for:
 2. calculateResponsivenessScore:
 
 Computes a responsiveness score based on average closure and response times.
+
 Tests ensure:
 - Proper score for average times.
 - Maximum score for fast response and closure times.
@@ -273,6 +277,7 @@ Tests ensure:
 3. calculateResponsiveness:
 
 Integrates API calls to fetch average closure and response times for a GitHub repo.
+
 Tests check:
 - Correct score and latency when issues/PRs exist.
 - Proper handling when there are no issues/PRs (score 0, warning logged).
@@ -291,10 +296,15 @@ Mocking ensures the tests are isolated and don't rely on real API interactions o
 Tests:
 
 Environment Token Handling: Tests the getToken function to ensure it retrieves the GitHub token from environment variables or logs an error if it's not found.
+
 URL Classification and Parsing: Verifies that URLs are classified correctly (GitHub, NPM, or other) and that GitHub URLs are parsed into owner and repository parts.
+
 API Calls: Tests functions like getOpenPRs, getClosedPRs, getIssues, and others to ensure they correctly call the GitHub API and handle responses or errors.
+
 NPM Package Utilities: Tests functions that extract package names from NPM URLs and retrieve GitHub URLs from NPM package metadata.
+
 README Content Retrieval: Verifies that README content is fetched and decoded from the GitHub API.
+
 Commits, Contributors, and Closure Times: Ensures functions properly fetch commit history, contributor data, and calculate average issue closure time.
 
 ## License
