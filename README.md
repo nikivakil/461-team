@@ -1,8 +1,8 @@
 # 461-team
-Alex Pienkowski  
-Aryana Lynch
-Niki Vakil
-Shaan Chanchani
+- Alex Pienkowski
+- Aryana Lynch
+- Niki Vakil
+- Shaan Chanchani
 
 # Files
 ### src/index.ts
@@ -64,6 +64,22 @@ Export:
 The logger is exported for use in other parts of the application.
 
 ### src/metrics/bus-factor.ts
+Calculate Bus Factor:
+Commits and Contributors: The calculateBusFactor function processes the commit history and contributor data of a repository.
+It counts the number of commits per contributor, sorts contributors by their commit counts, and calculates the bus factor by determining how many contributors are responsible for 80% of the total commits.
+A normalized score is computed, adjusting for the number of contributors and commits.
+
+Normalization:
+The normalizeScore function adjusts the raw bus factor based on contributor ratios, penalizing repositories with few contributors or low commit counts to produce a final score between 0 and 1.
+
+Main Function:
+The get_bus_factor function orchestrates the process:
+Fetches the repository's commit and contributor data using GitHub's API.
+Invokes calculateBusFactor to determine the bus factor and normalized score.
+Measures the latency (time taken for the calculation) and returns the result.
+
+Error Handling:
+Logs errors if the repository data can't be fetched or if calculations fail, and returns default values in such cases.
 
 ### src/metrics/correctness.ts
 
