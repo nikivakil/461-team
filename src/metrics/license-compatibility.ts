@@ -2,14 +2,41 @@ import fs from 'fs';
 import path from 'path';
 import logger from '../logger';
 
-const COMPATIBLE_LICENSES = [
-    { name: 'MIT', identifiers: ['MIT', 'MIT LICENSE'] },
-    { name: 'Apache-2.0', identifiers: ['APACHE', 'APACHE 2', 'APACHE 2.0', 'APACHE LICENSE 2.0'] },
-    { name: 'GPL-3.0', identifiers: ['GPL 3', 'GPL 3.0', 'GNU GENERAL PUBLIC LICENSE VERSION 3'] },
-    { name: 'GPL-2.0', identifiers: ['GPL 2', 'GPL 2.0', 'GNU GENERAL PUBLIC LICENSE VERSION 2'] },
-    { name: 'BSD-3-Clause', identifiers: ['BSD 3', 'BSD 3 CLAUSE', 'BSD-3-CLAUSE'] },
-    { name: 'LGPL-2.1', identifiers: ['LGPL 2.1', 'LESSER GNU PUBLIC LICENSE 2.1'] }
-  ];
+type LicenseDefinition = {
+    name: string;
+    pattern: RegExp;
+} | {
+    name: string;
+    patterns: RegExp[];
+};
+
+const COMPATIBLE_LICENSES: LicenseDefinition[] = [
+    { name: 'MIT', pattern: /\bMIT\b/i }, // match MIT 
+    { name: 'Apache-2.0', pattern: /\bAPACHE(?:\s+LICENSE)?\s+2(?:\.0)?\b/i }, // match APACHE (2, 2.0)
+    { 
+        name: 'GPL-3.0', 
+        patterns: [
+            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i, // match GPL (3, 3.0, V3, V3.0)
+            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i //match GNU GENERAL PUBLIC LICENSE (3, 3.0, V3, V3.0)
+        ]
+    },
+    { 
+        name: 'GPL-2.0', 
+        patterns: [
+            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i,
+            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i
+        ]
+    },
+    { name: 'BSD-3-Clause', pattern: /\bBSD[\s-]3[\s-]CLAUSE\b/i },
+    { 
+        name: 'LGPL-2.1', 
+        patterns: [
+            /\bLGPL[\s-]?(?:V(?:ERSION)?\s*)?2\.1\b/i,
+            /\bGNU\s+LESSER\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2\.1\b/i
+        ]
+    },
+    { name: 'Zlib', pattern: /\bZLIB\b/i }
+];
 
 //old const COMPATIBLE_LICENSES = [
 //     { name: 'GNU LESSER GENERAL PUBLIC LICENSE V2.1', keywords: ['LGPL', 'GNU LESSER GENERAL PUBLIC LICENSE', '2.1'] },
@@ -108,14 +135,11 @@ function extractLicenseFromReadme(readmeContent: string): string | null {
 
 export function checkLicenseCompatibility(licenseText: string): boolean {
     if (!licenseText) return false;
-    const upperCaseLicense = licenseText.toUpperCase().trim();
 
-    for (const license of COMPATIBLE_LICENSES) {
-        if (license.identifiers.some(identifier => upperCaseLicense.includes(identifier))) {
-            return true;
+    return COMPATIBLE_LICENSES.some(license => {
+        if ('patterns' in license) {
+            return license.patterns.some(pattern => pattern.test(licenseText));
         }
-   
-    }
-    return false;
+        return license.pattern.test(licenseText);
+    });
 }
-
