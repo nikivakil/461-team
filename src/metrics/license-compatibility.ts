@@ -2,16 +2,52 @@ import fs from 'fs';
 import path from 'path';
 import logger from '../logger';
 
-const COMPATIBLE_LICENSES = [
-    { name: 'GNU LESSER GENERAL PUBLIC LICENSE V2.1', keywords: ['LGPL', 'GNU LESSER GENERAL PUBLIC LICENSE', '2.1'] },
-    { name: 'GNU GENERAL PUBLIC LICENSE V2', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '2'] },
-    { name: 'GNU GENERAL PUBLIC LICENSE V3', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '3'] },
-    { name: 'MIT LICENSE', keywords: ['MIT'] },
-    { name: 'BSD 2-CLAUSE LICENSE', keywords: ['BSD', '2-CLAUSE'] },
-    { name: 'BSD 3-CLAUSE LICENSE', keywords: ['BSD', '3-CLAUSE'] },
-    { name: 'APACHE LICENSE 2.0', keywords: ['APACHE', '2.0'] },
-    { name: 'ZLIB LICENSE', keywords: ['ZLIB'] },
+type LicenseDefinition = {
+    name: string;
+    pattern: RegExp;
+} | {
+    name: string;
+    patterns: RegExp[];
+};
+
+const COMPATIBLE_LICENSES: LicenseDefinition[] = [
+    { name: 'MIT', pattern: /\bMIT\b/i }, // match MIT 
+    { name: 'Apache-2.0', pattern: /\bAPACHE(?:\s+LICENSE)?(?:,?\s+V(?:ERSION)?)?\s*2(?:\.0)?\b/i }, // match APACHE (2, 2.0) (v2 or version 2)
+    { 
+        name: 'GPL-3.0', 
+        patterns: [
+            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i, // match GPL (3, 3.0, V3, V3.0)
+            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i //match GNU GENERAL PUBLIC LICENSE (3, 3.0, V3, V3.0)
+        ]
+    },
+    { 
+        name: 'GPL-2.0', 
+        patterns: [
+            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i,
+            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i
+        ]
+    },
+    { name: 'BSD-3-Clause', pattern: /\bBSD[\s-]3[\s-]CLAUSE\b/i },
+    { 
+        name: 'LGPL-2.1', 
+        patterns: [
+            /\bLGPL[\s-]?(?:V(?:ERSION)?\s*)?2\.1\b/i,
+            /\bGNU\s+LESSER\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2\.1\b/i
+        ]
+    },
+    { name: 'Zlib', pattern: /\bZLIB\b/i }
 ];
+
+//old const COMPATIBLE_LICENSES = [
+//     { name: 'GNU LESSER GENERAL PUBLIC LICENSE V2.1', keywords: ['LGPL', 'GNU LESSER GENERAL PUBLIC LICENSE', '2.1'] },
+//     { name: 'GNU GENERAL PUBLIC LICENSE V2', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '2'] },
+//     { name: 'GNU GENERAL PUBLIC LICENSE V3', keywords: ['GPL', 'GNU GENERAL PUBLIC LICENSE', '3'] },
+//     { name: 'MIT LICENSE', keywords: ['MIT'] },
+//     { name: 'BSD 2-CLAUSE LICENSE', keywords: ['BSD', '2-CLAUSE'] },
+//     { name: 'BSD 3-CLAUSE LICENSE', keywords: ['BSD', '3-CLAUSE'] },
+//     { name: 'APACHE LICENSE 2.0', keywords: ['APACHE', '2.0'] },
+//     { name: 'ZLIB LICENSE', keywords: ['ZLIB'] },
+// ];
 
 interface LicenseResult {
     score: number;
@@ -48,7 +84,7 @@ export async function get_license_compatibility(repoPath: string): Promise<Licen
     }
 }
 
-async function getLicense(repoPath: string): Promise<string | null> {
+export async function getLicense(repoPath: string): Promise<string | null> {
     logger.debug('Searching for license file', { repoPath });
     // Check for LICENSE file first
     const files = fs.readdirSync(repoPath);
@@ -88,12 +124,22 @@ function extractLicenseFromReadme(readmeContent: string): string | null {
     return null;
 }
 
-function checkLicenseCompatibility(licenseText: string): boolean {
-    logger.debug('Checking license compatibility');
-    const upperCaseLicense = licenseText.toUpperCase();
-    const compatible = COMPATIBLE_LICENSES.some(license => 
-        license.keywords.every(keyword => upperCaseLicense.includes(keyword.toUpperCase()))
-    );
-    logger.debug('License compatibility check result', { compatible });
-    return compatible;
+// export function checkLicenseCompatibility(licenseText: string): boolean {
+//     if(!licenseText) return false;
+//     const upperCaseLicense = licenseText.toUpperCase(); // Convert to uppercase for case-insensitive comparison 
+   
+//     return COMPATIBLE_LICENSES.some(license => {
+//         return license.keywords.every(keyword => upperCaseLicense.includes(keyword.toUpperCase()));
+//     });
+// }
+
+export function checkLicenseCompatibility(licenseText: string): boolean {
+    if (!licenseText) return false;
+
+    return COMPATIBLE_LICENSES.some(license => {
+        if ('patterns' in license) {
+            return license.patterns.some(pattern => pattern.test(licenseText));
+        }
+        return license.pattern.test(licenseText);
+    });
 }

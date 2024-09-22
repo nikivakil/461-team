@@ -19,7 +19,7 @@ function normalizeTime(time: number, maxTime: number): number {
   return Math.max(0, 1 - time / maxTime);
 }
 
-function calculateResponsivenessScore(closureTime: number, responseTime: number): number {
+export function calculateResponsivenessScore(closureTime: number, responseTime: number): number {
   const closureScore = normalizeTime(closureTime, MAX_TIME_TO_CLOSE);
   const responseScore = normalizeTime(responseTime, MAX_TIME_TO_RESPOND);
   logger.debug('Calculated component scores', { closureScore, responseScore });
