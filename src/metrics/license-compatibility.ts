@@ -12,7 +12,7 @@ type LicenseDefinition = {
 
 const COMPATIBLE_LICENSES: LicenseDefinition[] = [
     { name: 'MIT', pattern: /\bMIT\b/i }, // match MIT 
-    { name: 'Apache-2.0', pattern: /\bAPACHE(?:\s+LICENSE)?\s+2(?:\.0)?\b/i }, // match APACHE (2, 2.0)
+    { name: 'Apache-2.0', pattern: /\bAPACHE(?:\s+LICENSE)?(?:,?\s+V(?:ERSION)?)?\s*2(?:\.0)?\b/i }, // match APACHE (2, 2.0) (v2 or version 2)
     { 
         name: 'GPL-3.0', 
         patterns: [
