@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import logger from '../logger';
 
-type LicenseDefinition = {
+type LicenseDefinition = { // Define the license patterns
     name: string;
     pattern: RegExp;
 } | {
@@ -16,26 +16,27 @@ const COMPATIBLE_LICENSES: LicenseDefinition[] = [
     { 
         name: 'GPL-3.0', 
         patterns: [
-            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i, // match GPL (3, 3.0, V3, V3.0)
-            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i //match GNU GENERAL PUBLIC LICENSE (3, 3.0, V3, V3.0)
+            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i, // match GPL (3, 3.0, V3, V3.0, version 3)
+            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?3(?:\.0)?\b/i //match GNU GENERAL PUBLIC LICENSE (3, 3.0, V3, V3.0, version 3)
         ]
     },
     { 
         name: 'GPL-2.0', 
         patterns: [
-            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i,
-            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i
+            /\bGPL[\s-]?(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i, // match GPL (2, 2.0, V2, V2.0)
+            /\bGNU\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2(?:\.0)?\b/i // match GNU GENERAL PUBLIC LICENSE (2, 2.0, V2, V2.0, version 2)
         ]
     },
-    { name: 'BSD-3-Clause', pattern: /\bBSD[\s-]3[\s-]CLAUSE\b/i },
+    { name: 'BSD-3-Clause', pattern: /\bBSD[\s-]3[\s-]CLAUSE\b/i }, // match BSD 3-CLAUSE
+    { name: 'BSD-2-Clause', pattern: /\bBSD[\s-]2[\s-]CLAUSE\b/i }, // match BSD 2-CLAUSE
     { 
         name: 'LGPL-2.1', 
         patterns: [
-            /\bLGPL[\s-]?(?:V(?:ERSION)?\s*)?2\.1\b/i,
-            /\bGNU\s+LESSER\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2\.1\b/i
+            /\bLGPL[\s-]?(?:V(?:ERSION)?\s*)?2\.1\b/i, // match LGPL (2.1, V2.1, version 2.1)
+            /\bGNU\s+LESSER\s+GENERAL\s+PUBLIC\s+LICENSE\s+(?:V(?:ERSION)?\s*)?2\.1\b/i // match GNU LESSER GENERAL PUBLIC LICENSE (2.1, V2.1, version 2.1)
         ]
     },
-    { name: 'Zlib', pattern: /\bZLIB\b/i }
+    { name: 'Zlib', pattern: /\bZLIB\b/i } // match ZLIB
 ];
 
 //old const COMPATIBLE_LICENSES = [
@@ -134,12 +135,12 @@ function extractLicenseFromReadme(readmeContent: string): string | null {
 // }
 
 export function checkLicenseCompatibility(licenseText: string): boolean {
-    if (!licenseText) return false;
+    if (!licenseText) return false; // If no license text, return false
 
     return COMPATIBLE_LICENSES.some(license => {
-        if ('patterns' in license) {
-            return license.patterns.some(pattern => pattern.test(licenseText));
+        if ('patterns' in license) { // Check if license has multiple patterns
+            return license.patterns.some(pattern => pattern.test(licenseText)); // Check if any pattern matches
         }
-        return license.pattern.test(licenseText);
+        return license.pattern.test(licenseText); // Check if the pattern matches
     });
 }

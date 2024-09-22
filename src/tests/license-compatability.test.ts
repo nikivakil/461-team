@@ -29,15 +29,9 @@ describe('License Compatibility Tests', () => {
       { licenseText: 'This is not a valid open-source license', expected: false },
     ];
   
-    test('verifies correct licenses', () => {
+    test('should determine if a license is valid or invalid', () => {
         testCases.forEach(({ licenseText, expected }) => {
           const result = checkLicenseCompatibility(licenseText);
-          if (result !== expected) {
-            console.log(`Failed test:
-    Text: "${licenseText}"
-    Expected: ${expected}, Actual: ${result}
-    `);
-          }
           expect(result).toBe(expected);
         });
       });
