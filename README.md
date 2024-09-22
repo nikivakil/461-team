@@ -4,8 +4,8 @@ Aryana Lynch
 Niki Vakil
 Shaan Chanchani
 
-## Files
-# src/index.ts
+# Files
+### src/index.ts
 Command-Line Program Setup:
 Uses the commander package to create CLI commands and arguments.
 Main command processes a file containing URLs, analyzing the repositories based on predefined metrics.
@@ -23,7 +23,7 @@ Output:
 Outputs the metrics as a JSON object with calculated scores and latencies for each URL in the file.
 Handles errors gracefully by returning an empty result for failed URLs.
 
-# src/url.ts
+### src/url.ts
 Environment Setup:
 Uses dotenv to load environment variables, including the GitHub API token.
 
@@ -44,7 +44,7 @@ Provides helper functions for constructing Axios request headers and extracting 
 Logging:
 Uses a logger for detailed logging of each action, including errors, warnings, and debugging information.
 
-# src/logger.ts
+### src/logger.ts
 Environment Setup:
 Loads environment variables from a .env file using dotenv.
 Retrieves log level (LOG_LEVEL) and log file path (LOG_FILE) from environment variables, with default values if they're not set.
@@ -63,21 +63,21 @@ Logs of level error are written to a separate error.log file.
 Export:
 The logger is exported for use in other parts of the application.
 
-# src/metrics/bus-factor.ts
+### src/metrics/bus-factor.ts
 
-# src/metrics/correctness.ts
+### src/metrics/correctness.ts
 
-# src/metrics/license-compatibility.ts
+### src/metrics/license-compatibility.ts
 
-# src/metrics/ramp-up-time.ts
+### src/metrics/ramp-up-time.ts
 
-# src/metrics/responsiveness.ts
+### src/metrics/responsiveness.ts
 
-# src/tests/bus-factor-test.ts
+### src/tests/bus-factor-test.ts
 
-# src/tests/correctness-test.ts
+### src/tests/correctness-test.ts
 
-# src/tests/url-test.ts
+### src/tests/url-test.ts
 
 ## License
 MIT
