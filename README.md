@@ -15,8 +15,6 @@ This project is a GitHub utility tool designed to analyze repository responsiven
 
 This tool aims to enhance the process of analyzing GitHub repositories and their responsiveness, making it easier for developers to assess project health and community engagement.
 
-## Set-Up
-
 
 ## Files
 ### src/index.ts
