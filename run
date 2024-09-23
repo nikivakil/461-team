@@ -7,10 +7,18 @@ process.env.LOG_FILE = process.env.LOG_FILE || 'logs/package-evaluator.log';
 if (process.argv[2] === 'install') {
     const { spawnSync } = require('child_process');
     console.log('Installing dependencies...');
-    const result = spawnSync('npm', ['install'], { stdio: 'inherit' });
+    let result = spawnSync('npm', ['install'], { stdio: 'inherit' });
     if (result.status === 0) {
         console.log('Dependencies installed successfully.');
-        process.exit(0);
+        console.log('Compiling TypeScript...');
+        result = spawnSync('npx', ['tsc'], { stdio: 'inherit' });
+        if (result.status === 0) {
+            console.log('TypeScript compilation successful.');
+            process.exit(0);
+        } else {
+            console.error('Error compiling TypeScript.');
+            process.exit(1);
+        }
     } else {
         console.error('Error installing dependencies.');
         process.exit(1);
