@@ -2,10 +2,29 @@ import winston from 'winston';
 import path from 'path';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
-const logLevel = process.env.LOG_LEVEL || 'info';
+const numericLogLevels: { [key: string]: number } = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  verbose: 4,
+  debug: 5
+};
+
+type LogLevel = keyof typeof numericLogLevels | number;
+
+function getLogLevel(level: LogLevel): string {
+  if (typeof level === 'string') {
+    return level in numericLogLevels ? level : 'info';
+  }
+  const numLevel = typeof level === 'number' ? level : parseInt(level, 10);
+  const stringLevel = Object.keys(numericLogLevels).find(key => numericLogLevels[key] === numLevel);
+  return stringLevel || 'info';  // Default to 'info' if no match found
+}
+
+const logLevel = getLogLevel(process.env.LOG_LEVEL as LogLevel || 'info');
 const logFile = process.env.LOG_FILE || 'logs/package-evaluator.log';
 
 // Ensure the logs directory exists

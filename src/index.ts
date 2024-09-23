@@ -204,46 +204,6 @@ program
   .version('1.0.0')
   .description('ACME Module Trustworthiness CLI');
   program
-//   .command('install')
-//   .description('Install dependencies')
-//   .action(async () => {
-//     logger.info('Checking dependencies...');
-    
-//     const scriptDir = path.dirname(__filename);
-//     const projectRoot = path.resolve(scriptDir, '..');
-//     process.chdir(projectRoot);
-
-//     const nodeModulesPath = path.join(projectRoot, 'node_modules');
-
-//     try {
-//       if (fs.existsSync(nodeModulesPath)) {
-//         logger.info('node_modules directory exists, checking for updates...');
-//         const { stdout, stderr } = await execAsync('npm install --no-audit --no-fund', { timeout: 30000 });
-//         if (stderr) logger.warn(`npm install stderr: ${stderr}`);
-//         if (stdout) logger.debug(`npm install stdout: ${stdout}`);
-//       } else {
-//         logger.info('node_modules directory not found, performing full install...');
-//         const { stdout, stderr } = await execAsync('npm install', { timeout: 60000 });
-//         if (stderr) logger.warn(`npm install stderr: ${stderr}`);
-//         if (stdout) logger.debug(`npm install stdout: ${stdout}`);
-//       }
-
-//       logger.info('Dependencies are up to date');
-//       process.exit(0);
-//     } catch (error: unknown) {
-//       if (error instanceof Error) {
-//         const nodeError = error as NodeJS.ErrnoException;
-//         if (nodeError.code === 'ETIMEDOUT') {
-//           logger.error('npm install timed out');
-//         } else {
-//           logger.error(`npm install error: ${nodeError.message}`);
-//         }
-//       } else {
-//         logger.error('An unknown error occurred during npm install');
-//       }
-//       process.exit(1);
-//     }
-//   });
 program
   .argument('<file>', 'Process URLs from a file')
   .action(async (file: string) => {
@@ -284,18 +244,18 @@ program
           logger.error(`Error processing URL ${url}:`, { error });
           const emptyResult = {
             URL: url,
-            NetScore: 0,
-            NetScore_Latency: 0,
-            RampUp: 0,
-            RampUp_Latency: 0,
-            Correctness: 0,
-            Correctness_Latency: 0,
-            BusFactor: 0,
-            BusFactor_Latency: 0,
-            ResponsiveMaintainer: 0,
-            ResponsiveMaintainer_Latency: 0,
-            License: 0,
-            License_Latency: 0
+            NetScore: -1,
+            NetScore_Latency: -1,
+            RampUp: -1,
+            RampUp_Latency: -1,
+            Correctness: -1,
+            Correctness_Latency: -1,
+            BusFactor: -1,
+            BusFactor_Latency: -1,
+            ResponsiveMaintainer: -1,
+            ResponsiveMaintainer_Latency: -1,
+            License: -1,
+            License_Latency: -1
           };
           console.log(JSON.stringify(emptyResult));
         }
